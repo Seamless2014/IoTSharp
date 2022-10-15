@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System;
+using IoTSharp.Contracts;
 
 namespace IoTSharp.Dtos
 {
@@ -19,6 +20,9 @@ namespace IoTSharp.Dtos
         [EnumDataType(typeof(IdentityType))]
         public IdentityType DefaultIdentityType { get; set; } = IdentityType.AccessToken;
         public string Description { get; set; }
+
+
+        public List<Device> Devices { get; set; }
 
     }
 }

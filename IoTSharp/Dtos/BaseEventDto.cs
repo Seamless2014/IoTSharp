@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using IoTSharp.Contracts;
 using IoTSharp.Data;
 
 namespace IoTSharp.Dtos
@@ -12,7 +13,7 @@ namespace IoTSharp.Dtos
         public string EventName { get; set; }
         public string EventDesc { get; set; }
         public int EventStaus { get; set; }
-        public EventType Type { get; set; }
+        public FlowRuleRunType Type { get; set; }
         public string MataData { get; set; }
         public Guid Creator { get; set; }
    

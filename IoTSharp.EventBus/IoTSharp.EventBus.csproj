@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net6.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="EasyCaching.Core" Version="1.6.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\IoTSharp.Contracts\IoTSharp.Contracts.csproj" />
+    <ProjectReference Include="..\IoTSharp.Data.TimeSeries\IoTSharp.Data.TimeSeries.csproj" />
+    <ProjectReference Include="..\IoTSharp.Data\IoTSharp.Data.csproj" />
+  </ItemGroup>
+
+</Project>

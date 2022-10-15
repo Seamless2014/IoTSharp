@@ -14,6 +14,9 @@ using System.Dynamic;
 using System.Linq;
 using System.Threading.Tasks;
 using Newtonsoft.Json.Linq;
+using IoTSharp.Extensions;
+using IoTSharp.Contracts;
+using IoTSharp.Data.Extensions;
 
 namespace IoTSharp.FlowRuleEngine
 {
@@ -44,6 +47,45 @@ namespace IoTSharp.FlowRuleEngine
             _sp = _scopeFactor.CreateScope().ServiceProvider;
         }
 
+        public async Task RunRules(Guid devid, object obj, EventType mountType)
+        {
+            try
+            {
+                var rules = await _caching.GetAsync($"ruleid_{devid}_{Enum.GetName(mountType)}", async () =>
+                {
+                    using (var scope = _scopeFactor.CreateScope())
+                    using (var _dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>())
+                    {
+                        var guids = await _dbContext.GerDeviceRulesIdList(devid, mountType);
+                        return guids;
+                    }
+                }, TimeSpan.FromSeconds(_setting.RuleCachingExpiration));
+                if (rules.HasValue)
+                {
+                    rules.Value.ToList().ForEach(async g =>
+                    {
+                        try
+                        {
+                          await RunFlowRules(g, obj, devid, FlowRuleRunType.Normal, null);
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(ex, $"为设备{devid}执行规则链{g}时遇到错误{ex.Message}");
+                        }
+                    });
+                }
+                else
+                {
+                    _logger.LogDebug($"{devid}的数据无相关规则链处理。");
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"{devid}处理规则链时遇到异常:{ex.Message}");
+
+            }
+        }
+
         /// <summary>
         ///
         /// </summary>
@@ -54,7 +96,7 @@ namespace IoTSharp.FlowRuleEngine
         /// <param name="bizId">业务Id(第三方唯一Id，用于取回事件以及记录的标识)</param>
         /// <returns> 返回所有节点的记录信息，需要保存则保存</returns>
 
-        public async Task<List<FlowOperation>> RunFlowRules(Guid ruleid, object data, Guid deviceId, EventType type, string bizId)
+        public async Task<List<FlowOperation>> RunFlowRules(Guid ruleid, object data, Guid deviceId, FlowRuleRunType type, string bizId)
         {
             var cacheRule = await _caching.GetAsync($"RunFlowRules_{ruleid}", async () =>
             {
@@ -93,7 +135,7 @@ namespace IoTSharp.FlowRuleEngine
                 {
                     using (var context = sp.ServiceProvider.GetRequiredService<ApplicationDbContext>())
                     {
-                        var r = context.FlowRules.Include(c => c.Customer).Include(c => c.Tenant).FirstOrDefault(c => c.RuleId == rule.RuleId);
+                        var r = context.FlowRules.Include(c => c.Customer).Include(c => c.Tenant).AsSplitQuery().FirstOrDefault(c => c.RuleId == rule.RuleId);
                         if (r != null)
                         {
                             @event.FlowRule = r;

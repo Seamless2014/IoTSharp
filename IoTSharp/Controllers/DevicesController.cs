@@ -1,17 +1,16 @@
-﻿using DotNetCore.CAP;
+﻿using IoTSharp.EventBus;
 using EasyCaching.Core;
 using Esprima.Ast;
 using IoTSharp.Contracts;
 using IoTSharp.Controllers.Models;
 using IoTSharp.Data;
+using IoTSharp.Data.Extensions;
 using IoTSharp.Dtos;
 using IoTSharp.Extensions;
 using IoTSharp.FlowRuleEngine;
 using IoTSharp.Gateways;
 using IoTSharp.Models;
 using IoTSharp.Storage;
-using IoTSharp.X509Extensions;
-using LinqKit;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -35,8 +34,16 @@ using System.Linq.Expressions;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using System.Xml;
+using ShardingCore.Extensions;
 using Dic = System.Collections.Generic.Dictionary<string, string>;
 using DicKV = System.Collections.Generic.KeyValuePair<string, string>;
+using Consul;
+using LogLevel = Microsoft.Extensions.Logging.LogLevel;
+using Shashlik.EventBus.Utils;
+using static CoAP.Net.Exchange;
+using System.Runtime.Intrinsics.X86;
+using CoAP;
+using IoTSharp.Extensions.X509;
 
 namespace IoTSharp.Controllers
 {
@@ -56,13 +63,13 @@ namespace IoTSharp.Controllers
         private readonly IStorage _storage;
         private readonly MqttServer _serverEx;
         private readonly AppSettings _setting;
-        private readonly ICapPublisher _queue;
+        private readonly IPublisher _queue;
         private readonly FlowRuleProcessor _flowRuleProcessor;
         private readonly IEasyCachingProvider _caching;
         private readonly IServiceScopeFactory _scopeFactor;
 
         public DevicesController(UserManager<IdentityUser> userManager,
-            SignInManager<IdentityUser> signInManager, ILogger<DevicesController> logger, MqttServer serverEx, ApplicationDbContext context, MqttClientOptions mqtt, IStorage storage, IOptions<AppSettings> options, ICapPublisher queue
+            SignInManager<IdentityUser> signInManager, ILogger<DevicesController> logger, MqttServer serverEx, ApplicationDbContext context, MqttClientOptions mqtt, IStorage storage, IOptions<AppSettings> options, IPublisher queue
             , IEasyCachingProviderFactory factory, FlowRuleProcessor flowRuleProcessor, IServiceScopeFactory scopeFactor)
         {
             string _hc_Caching = $"{nameof(CachingUseIn)}-{Enum.GetName(options.Value.CachingUseIn)}";
@@ -117,88 +124,96 @@ namespace IoTSharp.Controllers
         public async Task<ApiResult<PagedData<DeviceDetailDto>>> GetDevices([FromQuery] DeviceParam m)
         {
             var profile = this.GetUserProfile();
-
-            if (m.limit > 0)
+            m.limit = m.limit < 5 ? 5 : m.limit;
+            try
             {
-                try
+            
+                var query=from  c in _context.Device.Include(c => c.DeviceIdentity) where c.Customer.Id == m.customerId && !c.Deleted && c.Tenant.Id == profile.Tenant select c;
+                if (m.OnlyActive)
                 {
-                    Expression<Func<Device, bool>> condition = x => x.Customer.Id == m.customerId && x.Status > -1 && x.Tenant.Id == profile.Tenant;
-                    if (!string.IsNullOrEmpty(m.Name))
+                    var al = from a in _context.AttributeLatest where   a.KeyName == Constants._Active &&a.Value_Boolean==true   select a.DeviceId;
+                    query = from x in query where al.Contains( x.Id)   select x;
+                }
+                if (!string.IsNullOrEmpty(m.Name))
+                {
+                    if (System.Text.RegularExpressions.Regex.IsMatch(m.Name, @"(?im)^[{(]?[0-9A-F]{8}[-]?(?:[0-9A-F]{4}[-]?){3}[0-9A-F]{12}[)}]?$"))
                     {
-                        if (System.Text.RegularExpressions.Regex.IsMatch(m.Name, @"(?im)^[{(]?[0-9A-F]{8}[-]?(?:[0-9A-F]{4}[-]?){3}[0-9A-F]{12}[)}]?$"))
-                        {
-                            condition = condition.And(x => x.Id == Guid.Parse(m.Name));
-                        }
-                        else
-                        {
-                            condition = condition.And(x => x.Name.Contains(m.Name));
-                        }
+                        var id = Guid.Parse(m.Name);
+                        query = from  x in query  where   x.Id == id select x ;
                     }
-
-                    return new ApiResult<PagedData<DeviceDetailDto>>(ApiCode.Success, "OK", new PagedData<DeviceDetailDto>
+                    else
                     {
-                        total = await _context.Device.CountAsync(condition),
-                        rows = _context.Device.Include(c => c.DeviceIdentity).OrderByDescending(c => c.LastActive).Where(condition).Skip((m.offset) * m.limit).Take(m.limit).ToList().Select(x => new DeviceDetailDto()
-                        {
-                            Id = x.Id,
-                            Name = x.Name,
-                            LastActive = x.LastActive,
-                            IdentityId = x.DeviceIdentity?.IdentityId,
-                            IdentityValue = x.DeviceIdentity?.IdentityType == IdentityType.X509Certificate ? "" : x.DeviceIdentity?.IdentityValue,
-                            Tenant = x.Tenant,
-                            Customer = x.Customer,
-                            DeviceType = x.DeviceType,
-                            Online = x.Online,
-                            Owner = x.Owner,
-                            Timeout = x.Timeout,
-                            IdentityType = x.DeviceIdentity?.IdentityType ?? IdentityType.AccessToken
-                        }).ToList()
-                    });
+                        query = from x in query where x.Name.Contains(m.Name) select x;
+                    }
                 }
-                catch (Exception e)
+                var lst = await query.Skip((m.offset) * m.limit).Take(m.limit).AsSplitQuery().Select(x => new DeviceDetailDto()
                 {
-                    return new ApiResult<PagedData<DeviceDetailDto>>(ApiCode.Exception, e.Message, null);
-                }
+                    Id = x.Id,
+                    Name = x.Name,
+                    IdentityId = x.DeviceIdentity.IdentityId,
+                    IdentityValue = x.DeviceIdentity.IdentityType == IdentityType.X509Certificate ? "" : x.DeviceIdentity.IdentityValue,
+                    DeviceType = x.DeviceType,
+                    Owner = x.Owner,
+                    TenantId=x.Tenant.Id,
+                    TenantName=x.Tenant.Name,
+                    CustomerId=x.Customer.Id,
+                    CustomerName=x.Customer.Name,
+                    Timeout = x.Timeout,
+                    IdentityType = x.DeviceIdentity.IdentityType
+                }).ToListAsync();
+                await QueryActivityInfo(lst);
+                return new ApiResult<PagedData<DeviceDetailDto>>(ApiCode.Success, "OK", new PagedData<DeviceDetailDto>
+                {
+                    total = await query.CountAsync(),
+                    rows = lst
+                });
             }
-            else
+            catch (Exception e)
             {
-                try
-                {
-                    Expression<Func<Device, bool>> condition = x => x.Customer.Id == m.customerId && x.Status > -1;
-                    if (!string.IsNullOrEmpty(m.Name))
-                    {
-                        if (System.Text.RegularExpressions.Regex.IsMatch(m.Name, @"(?im)^[{(]?[0-9A-F]{8}[-]?(?:[0-9A-F]{4}[-]?){3}[0-9A-F]{12}[)}]?$"))
-                        {
-                            condition = condition.And(x => x.Id == Guid.Parse(m.Name));
-                        }
-                        else
-                        {
-                            condition = condition.And(x => x.Name.Contains(m.Name));
-                        }
-                    }
-
-                    return new ApiResult<PagedData<DeviceDetailDto>>(ApiCode.Success, "OK", new PagedData<DeviceDetailDto>
-                    {
-                        total = await _context.Device.CountAsync(condition),
-                        rows = await _context.Device.OrderByDescending(c => c.LastActive).Where(condition).Select(x => new DeviceDetailDto()
-                        {
-                            Id = x.Id,
-                            Name = x.Name,
-                            LastActive = x.LastActive,
-                            Tenant = x.Tenant,
-                            Customer = x.Customer,
-                            DeviceType = x.DeviceType,
-                            Online = x.Online,
-                            Owner = x.Owner,
-                            Timeout = x.Timeout,
-                        }).ToListAsync()
-                    });
-                }
-                catch (Exception e)
-                {
-                    return new ApiResult<PagedData<DeviceDetailDto>>(ApiCode.Exception, e.Message, null);
-                }
+                return new ApiResult<PagedData<DeviceDetailDto>>(ApiCode.Exception, e.Message, null);
             }
+
+        }
+        private async Task QueryActivityInfo(DeviceDetailDto dev)
+        {
+            var id = dev.Id;
+            var al = from a in _context.AttributeLatest where id == a.DeviceId && (a.KeyName == Constants._Active || a.KeyName == Constants._LastActivityDateTime) select a;
+            var alx = await al.ToListAsync();
+            if (alx != null)
+            {
+                alx.ForEach(a =>
+                {
+                    if (a.KeyName == Constants._Active)
+                    {
+                        dev.Active = (bool)a.Value_Boolean;
+                    }
+                    else if (a.KeyName == Constants._LastActivityDateTime)
+                    {
+                        dev.LastActivityDateTime = a.Value_DateTime;
+                    }
+                });
+            }
+        }
+        private async Task QueryActivityInfo(List<DeviceDetailDto> lst)
+        {
+            var devlst = lst.Select(c => c.Id).ToList();
+            var al = from a in _context.AttributeLatest where devlst.Contains(a.DeviceId) && (a.KeyName == Constants._Active || a.KeyName == Constants._LastActivityDateTime) select a;
+            var allist = await al.ToListAsync();
+            allist.ForEach(a =>
+            {
+                var dev = lst.FirstOrDefault(d => d.Id == a.DeviceId);
+                if (dev != null)
+                {
+                    if (a.KeyName == Constants._Active)
+                    {
+                        dev.Active = (bool)a.Value_Boolean;
+                    }
+                    else if (a.KeyName == Constants._LastActivityDateTime)
+                    {
+                        dev.LastActivityDateTime = a.Value_DateTime;
+                    }
+                }
+            });
         }
 
         /// <summary>
@@ -240,37 +255,58 @@ namespace IoTSharp.Controllers
         [ProducesDefaultResponseType]
         public async Task<ApiResult<DeviceIdentity>> CreateX509Identity(Guid deviceId)
         {
-            var did = await _context.DeviceIdentities.Include(d => d.Device).FirstOrDefaultAsync(c => c.Device.Id == deviceId);
-            var cust = from c in _context.Device.Include(d => d.Customer).Include(d => d.Tenant) where c.Id == deviceId select c;
-            var dev = cust.FirstOrDefault();
-            if (did != null && dev != null)
+            var option = _setting.MqttBroker;
+            if (option.CACertificate == null)
             {
-                var option = _setting.MqttBroker;
-
-                SubjectAlternativeNameBuilder altNames = new SubjectAlternativeNameBuilder();
-                altNames.AddUserPrincipalName(did.Device.Id.ToString());
-                altNames.AddDnsName(_setting.MqttBroker.DomainName);
-                altNames.AddUri(new Uri($"mqtt://{_setting.MqttBroker.ServerIPAddress}:{_setting.MqttBroker.TlsPort}"));
-                string name = $"CN={dev.Name},C=CN,L={dev.Customer.Province ?? "IoTSharp"},ST={dev.Customer.City ?? "IoTSharp"},O={dev.Customer.Name},OU={dev.Tenant.Name}";
-                var tlsclient = option.CACertificate.CreateTlsClientRSA(name, altNames);
-                string x509CRT, x509Key;
-                tlsclient.SavePem(out x509CRT, out x509Key);
-                did.IdentityType = IdentityType.X509Certificate;
-                did.IdentityId = tlsclient.Thumbprint;
-                var pem = new
-                {
-                    PrivateKey = x509Key,
-                    PublicKey = x509CRT
-                };
-                did.IdentityValue = Newtonsoft.Json.JsonConvert.SerializeObject(pem);
-                await _context.SaveChangesAsync();
-                return new ApiResult<DeviceIdentity>(ApiCode.Success, "OK", new DeviceIdentity() { Id = did.Id, IdentityType = did.IdentityType, IdentityId = did.IdentityId });
+                return new ApiResult<DeviceIdentity>(ApiCode.ExceptionDeviceIdentity, "Not found CACertificate", null);
             }
             else
             {
-                return new ApiResult<DeviceIdentity>(ApiCode.NotFoundDeviceIdentity, "Not found device identity", null);
+                var did = await _context.DeviceIdentities.Include(d => d.Device).AsSingleQuery().FirstOrDefaultAsync(c => c.Device.Id == deviceId);
+                var cust = from c in _context.Device.Include(d => d.Customer).Include(d => d.Tenant).AsSplitQuery() where c.Id == deviceId select c;
+                var dev = cust.FirstOrDefault();
+                if (did != null && dev != null)
+                {
+               
+                    if (Uri.TryCreate(_setting.MqttBroker.DomainName, UriKind.Absolute, out Uri _uri))
+                    {
+                        SubjectAlternativeNameBuilder altNames = new SubjectAlternativeNameBuilder();
+                        altNames.AddUserPrincipalName(did.Device.Id.ToString());
+                        altNames.AddDnsName(_uri.Host);
+                        if (_setting.MqttBroker.TlsPort > 0 && _setting.MqttBroker.TlsPort < 65535)
+                        {
+                            altNames.AddUri(new Uri($"mqtt://{_uri.Host}:{_setting.MqttBroker.TlsPort}"));
+                            string name = $"CN={dev.Name},C=CN,L={dev.Customer.Province ?? "IoTSharp"},ST={dev.Customer.City ?? "IoTSharp"},O={dev.Customer.Name},OU={dev.Tenant.Name}";
+                            var tlsclient = option.CACertificate.CreateTlsClientRSA(name, altNames);
+                            string x509CRT, x509Key;
+                            tlsclient.SavePem(out x509CRT, out x509Key);
+                            did.IdentityType = IdentityType.X509Certificate;
+                            did.IdentityId = tlsclient.Thumbprint;
+                            var pem = new
+                            {
+                                PrivateKey = x509Key,
+                                PublicKey = x509CRT
+                            };
+                            did.IdentityValue = Newtonsoft.Json.JsonConvert.SerializeObject(pem);
+                            await _context.SaveChangesAsync();
+                            return new ApiResult<DeviceIdentity>(ApiCode.Success, "OK", new DeviceIdentity() { Id = did.Id, IdentityType = did.IdentityType, IdentityId = did.IdentityId });
+                        }
+                        else
+                        {
+                            return new ApiResult<DeviceIdentity>(ApiCode.ExceptionDeviceIdentity, "Please set valid MqttBroker TlsPort", null);
+                        }
+                    }
+
+                    return new ApiResult<DeviceIdentity>(ApiCode.ExceptionDeviceIdentity, "Please set MqttBroker domain name", null);
+
+                }
+                else
+                {
+                    return new ApiResult<DeviceIdentity>(ApiCode.ExceptionDeviceIdentity, "Not found device identity", null);
+                }
             }
         }
+
 
         /// <summary>
         /// 下载证书
@@ -280,11 +316,12 @@ namespace IoTSharp.Controllers
         [HttpGet("{deviceId}/DownloadCertificates")]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
         [ProducesResponseType(typeof(ApiResult), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status200OK)]
         public ActionResult DownloadCertificates(Guid deviceId)
         {
             try
             {
-                var dt = _context.DeviceIdentities.Include(d => d.Device).FirstOrDefault(c => c.Device.Id == deviceId);
+                var dt = _context.DeviceIdentities.Include(d => d.Device).AsSingleQuery().FirstOrDefault(c => c.Device.Id == deviceId);
                 if (dt == null || dt.IdentityType != IdentityType.X509Certificate || string.IsNullOrEmpty(dt.IdentityValue))
                 {
                     return Ok(new ApiResult(ApiCode.NotFoundDevice, "未找到设备或设备公钥、秘钥为空"));
@@ -354,7 +391,7 @@ namespace IoTSharp.Controllers
         [ProducesDefaultResponseType]
         public async Task<ApiResult<List<AttributeDataDto>>> GetAttributeLatest(Guid deviceId)
         {
-            Device dev = Found(deviceId);
+            Device dev = await FoundAsync(deviceId);
             if (dev == null)
             {
                 return new ApiResult<List<AttributeDataDto>>(ApiCode.CantFindObject, "Device's Identity not found", null);
@@ -380,6 +417,31 @@ namespace IoTSharp.Controllers
         }
 
         /// <summary>
+        ///获取指定Key和设备Id列表的最新属性
+        /// </summary>
+        /// <returns></returns>
+        [Authorize(Roles = nameof(UserRole.NormalUser))]
+        [HttpPost("AttributeLatestByKeyNameAndDeviceId")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status404NotFound)]
+        [ProducesDefaultResponseType]
+        public async Task<ApiResult<List<AttributeDataDto>>> GetAttributeLatestByKeyNameAndDeviceId(AttributeLatestByKeyNameAndDeviceIdDto dto)
+        {
+            return new ApiResult<List<AttributeDataDto>>(ApiCode.Success, "Ok", await _context.AttributeLatest.Where(p => dto.deviceIds.Any(c => c == p.DeviceId) && dto.keyNames.Contains(p.KeyName)).Select(t =>
+                new AttributeDataDto()
+                {
+                    DeviceId = t.DeviceId,
+                    DataSide = t.DataSide,
+                    DateTime = t.DateTime,
+                    KeyName = t.KeyName,
+                    DataType = t.Type,
+                    Value = t.ToObject()
+                }).ToListAsync());
+        }
+
+
+
+        /// <summary>
         /// 获取指定设备指定keys的最新属性
         /// </summary>
         /// <param name="deviceId">Which device do you read?</param>
@@ -392,7 +454,7 @@ namespace IoTSharp.Controllers
         [ProducesDefaultResponseType]
         public async Task<ApiResult<List<AttributeDataDto>>> GetAttributeLatest(Guid deviceId, string keys)
         {
-            Device dev = Found(deviceId);
+            Device dev = await FoundAsync(deviceId);
             if (dev == null)
             {
                 return new ApiResult<List<AttributeDataDto>>(ApiCode.NotFoundDevice, "Device's  not found", null);
@@ -405,26 +467,27 @@ namespace IoTSharp.Controllers
             }
         }
 
-        private Device Found(Guid deviceId)
-        {
-            return FoundAsync(deviceId).GetAwaiter().GetResult();
-        }
+
 
         private async Task<Device> FoundAsync(Guid deviceId)
         {
             Device dev = null;
             if (User.IsInRole(nameof(UserRole.TenantAdmin)))
             {
-                var tid = User.Claims.First(c => c.Type == IoTSharpClaimTypes.Tenant);
-                dev = await _context.Device.Include(d => d.Tenant).FirstOrDefaultAsync(d => d.Id == deviceId && d.Tenant.Id.ToString() == tid.Value && d.Status > -1);
+                var tid = Guid.Parse(User.Claims.First(c => c.Type == IoTSharpClaimTypes.Tenant).Value);
+                dev = await _context.Device.Include(d => d.Tenant).Include(d=>d.Customer).Include(d=>d.DeviceIdentity).AsSplitQuery().FirstOrDefaultAsync(d => d.Id == deviceId && d.Tenant.Id == tid && !d.Deleted);
             }
             else if (User.IsInRole(nameof(UserRole.NormalUser)))
             {
-                var cid = User.Claims.First(c => c.Type == IoTSharpClaimTypes.Customer);
-                dev = await _context.Device.Include(d => d.Customer).FirstOrDefaultAsync(d => d.Id == deviceId && d.Customer.Id.ToString() == cid.Value && d.Status > -1);
+                var cid = Guid.Parse(User.Claims.First(c => c.Type == IoTSharpClaimTypes.Customer).Value);
+                dev = await _context.Device.Include(d => d.Customer).Include(d => d.Customer).Include(d => d.DeviceIdentity).AsSplitQuery().FirstOrDefaultAsync(d => d.Id == deviceId && d.Customer.Id == cid && !d.Deleted);
             }
             return dev;
         }
+
+
+
+
 
         /// <summary>
         ///获取指定设备的最新遥测数据
@@ -438,10 +501,10 @@ namespace IoTSharp.Controllers
         [ProducesDefaultResponseType]
         public async Task<ApiResult<List<TelemetryDataDto>>> GetTelemetryLatest(Guid deviceId)
         {
-            Device dev = Found(deviceId);
+            Device dev = await FoundAsync(deviceId);
             if (dev == null)
             {
-                return new ApiResult<List<TelemetryDataDto>>(ApiCode.NotFoundDeviceIdentity, "Device's Identity not found", null);
+                return new ApiResult<List<TelemetryDataDto>>(ApiCode.ExceptionDeviceIdentity, "Device's Identity not found", null);
             }
 
             try
@@ -470,10 +533,10 @@ namespace IoTSharp.Controllers
         [ProducesDefaultResponseType]
         public async Task<ApiResult<List<TelemetryDataDto>>> GetTelemetryLatest(Guid deviceId, string keys)
         {
-            Device dev = Found(deviceId);
+            Device dev = await FoundAsync(deviceId);
             if (dev == null)
             {
-                return new ApiResult<List<TelemetryDataDto>>(ApiCode.NotFoundDeviceIdentity, "Device's Identity not found", null);
+                return new ApiResult<List<TelemetryDataDto>>(ApiCode.ExceptionDeviceIdentity, "Device's Identity not found", null);
             }
             else
             {
@@ -495,10 +558,10 @@ namespace IoTSharp.Controllers
         [ProducesDefaultResponseType]
         public async Task<ApiResult<List<TelemetryDataDto>>> GetTelemetryData(Guid deviceId, string keys, DateTime begin)
         {
-            Device dev = Found(deviceId);
+            Device dev = await FoundAsync(deviceId);
             if (dev == null)
             {
-                return new ApiResult<List<TelemetryDataDto>>(ApiCode.NotFoundDeviceIdentity, "Device's Identity not found", null);
+                return new ApiResult<List<TelemetryDataDto>>(ApiCode.ExceptionDeviceIdentity, "Device's Identity not found", null);
             }
             else
             {
@@ -522,10 +585,10 @@ namespace IoTSharp.Controllers
         [ProducesDefaultResponseType]
         public async Task<ApiResult<List<TelemetryDataDto>>> GetTelemetryData(Guid deviceId, string keys, DateTime begin, DateTime end)
         {
-            Device dev = Found(deviceId);
+            Device dev = await FoundAsync(deviceId);
             if (dev == null)
             {
-                return new ApiResult<List<TelemetryDataDto>>(ApiCode.NotFoundDeviceIdentity, "Device's Identity not found", null);
+                return new ApiResult<List<TelemetryDataDto>>(ApiCode.ExceptionDeviceIdentity, "Device's Identity not found", null);
             }
             else
             {
@@ -554,10 +617,10 @@ namespace IoTSharp.Controllers
         [ProducesDefaultResponseType]
         public async Task<ApiResult<List<TelemetryDataDto>>> GetTelemetryData(Guid deviceId, TelemetryDataQueryDto queryDto)
         {
-            Device dev = Found(deviceId);
+            Device dev = await FoundAsync(deviceId);
             if (dev == null)
             {
-                return new ApiResult<List<TelemetryDataDto>>(ApiCode.NotFoundDeviceIdentity, "Device's Identity not found", null);
+                return new ApiResult<List<TelemetryDataDto>>(ApiCode.ExceptionDeviceIdentity, "Device's Identity not found", null);
             }
             else
             {
@@ -577,14 +640,33 @@ namespace IoTSharp.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResult<Guid>), StatusCodes.Status404NotFound)]
         [ProducesDefaultResponseType]
-        public async Task<ApiResult<Device>> GetDevice(Guid id)
+        public async Task<ApiResult<DeviceDetailDto>> GetDevice(Guid id)
         {
-            Device device = await FoundAsync(id);
-            if (device == null)
+            Device x = await FoundAsync(id);
+            if (x == null)
             {
-                return new ApiResult<Device>(ApiCode.NotFoundDeviceIdentity, "Device's Identity not found", null);
+                return new ApiResult<DeviceDetailDto>(ApiCode.ExceptionDeviceIdentity, "Device's Identity not found", null);
             }
-            return new ApiResult<Device>(ApiCode.Success, "Ok", device);
+            else
+            {
+                var device = new DeviceDetailDto()
+                {
+                    Id = x.Id,
+                    Name = x.Name,
+                    IdentityId = x.DeviceIdentity.IdentityId,
+                    IdentityValue = x.DeviceIdentity.IdentityType == IdentityType.X509Certificate ? "" : x.DeviceIdentity.IdentityValue,
+                    TenantName = x.Tenant.Name,
+                    CustomerName = x.Customer.Name,
+                    TenantId = x.Tenant.Id,
+                    CustomerId= x.Customer.Id,
+                    DeviceType = x.DeviceType,
+                    Owner = x.Owner,
+                    Timeout = x.Timeout,
+                    IdentityType = x.DeviceIdentity.IdentityType
+                };
+                await QueryActivityInfo(device);
+                return new ApiResult<DeviceDetailDto>(ApiCode.Success, "Ok", device);
+            }
         }
 
         /// <summary>
@@ -610,13 +692,13 @@ namespace IoTSharp.Controllers
 
             var cid = User.Claims.First(c => c.Type == IoTSharpClaimTypes.Customer);
             var tid = User.Claims.First(c => c.Type == IoTSharpClaimTypes.Tenant);
-            var dev = _context.Device.Include(d => d.Tenant).Include(d => d.Customer).First(d => d.Id == device.Id);
+            var dev = _context.Device.Include(d => d.Tenant).Include(d => d.Customer).AsSplitQuery().First(d => d.Id == device.Id);
             var tenid = dev.Tenant.Id;
             var cusid = dev.Customer.Id;
 
             if (dev == null)
             {
-                return new ApiResult<bool>(ApiCode.NotFoundDeviceIdentity, "Device's Identity not found", false);
+                return new ApiResult<bool>(ApiCode.ExceptionDeviceIdentity, "Device's Identity not found", false);
             }
             else if (dev.Tenant?.Id.ToString() != tid.Value || dev.Customer?.Id.ToString() != cid.Value)
             {
@@ -651,22 +733,22 @@ namespace IoTSharp.Controllers
         }
 
 
-     
+
         [Authorize(Roles = nameof(UserRole.CustomerAdmin))]
         [HttpPost("produce/{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResult<DevicePostDto>), StatusCodes.Status404NotFound)]
         [ProducesDefaultResponseType]
-        public async Task<ApiResult<Device>> PostDevice(Guid id, DevicePostProduceDto  device)
+        public async Task<ApiResult<Device>> PostDevice(Guid id, DevicePostProduceDto device)
         {
-            var produce = await _context.Produces.Include(p=>p.DefaultAttributes).FirstOrDefaultAsync( p=>p.Id==id);
-            if (produce== null)
+            var produce = await _context.Produces.Include(p => p.DefaultAttributes).AsSplitQuery().FirstOrDefaultAsync(p => p.Id == id);
+            if (produce == null)
             {
                 return new ApiResult<Device>(ApiCode.NotFoundProduce, "Not found Produce", null);
             }
             var dto = new DevicePostDto() { Name = device.Name, DeviceType = produce.DefaultDeviceType, IdentityType = produce.DefaultIdentityType, Timeout = produce.DefaultTimeout };
             var dev = await PostDevice(dto);
-            if (dev.Code==(int) ApiCode.Success)
+            if (dev.Code == (int)ApiCode.Success)
             {
                 var atts = produce.DefaultAttributes.Select(c =>
                 {
@@ -678,7 +760,7 @@ namespace IoTSharp.Controllers
                     return atx;
                 });
                 _context.AttributeLatest.AddRange(atts);
-                 await _context.SaveChangesAsync();
+                await _context.SaveChangesAsync();
                 return new ApiResult<Device>(ApiCode.Success, "Ok", dev.Data);
             }
             else
@@ -686,13 +768,13 @@ namespace IoTSharp.Controllers
                 return dev;
             }
         }
-            /// <summary>
-            /// 创建设备， 客户ID和租户ID均为当前登录用户所属
-            /// </summary>
-            /// <param name="device"></param>
-            /// <returns></returns>
-            // POST: api/Devices
-            [Authorize(Roles = nameof(UserRole.CustomerAdmin))]
+        /// <summary>
+        /// 创建设备， 客户ID和租户ID均为当前登录用户所属
+        /// </summary>
+        /// <param name="device"></param>
+        /// <returns></returns>
+        // POST: api/Devices
+        [Authorize(Roles = nameof(UserRole.CustomerAdmin))]
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResult<DevicePostDto>), StatusCodes.Status404NotFound)]
@@ -706,8 +788,7 @@ namespace IoTSharp.Controllers
                 Name = device.Name,
                 DeviceType = device.DeviceType,
                 Timeout = device.Timeout,
-                LastActive = DateTime.Now,
-                Status = 1,
+                Deleted = false
             };
             devvalue.Tenant = _context.Tenant.Find(new Guid(tid.Value));
             devvalue.Customer = _context.Customer.Find(new Guid(cid.Value));
@@ -726,8 +807,7 @@ namespace IoTSharp.Controllers
                 _context.DeviceIdentities.Update(identity);
                 await _context.SaveChangesAsync();
             }
-
-            await this._queue.PublishAsync("iotsharp.services.platform.addnewdevice", devvalue);
+            await _queue.PublishCreateDevice(devvalue.Id);
             return new ApiResult<Device>(ApiCode.Success, "Ok", await FoundAsync(devvalue.Id));
         }
 
@@ -743,7 +823,7 @@ namespace IoTSharp.Controllers
         [ProducesDefaultResponseType]
         public async Task<ApiResult<bool>> DeleteDevice(Guid id)
         {
-            Device device = Found(id);
+            Device device = await FoundAsync(id);
 
             if (device == null)
             {
@@ -891,7 +971,7 @@ namespace IoTSharp.Controllers
                         response = await rpcClient.ExecuteAsync(_timeout, dev.Id.ToString(), method, payload, qos);
                     }
                     await rpcClient.DisconnectAsync();
-                    _logger.LogInformation($"RPC  设备{dev.Name} 调用完成 { System.Text.Encoding.UTF8.GetString(response)}");
+                    _logger.LogInformation($"RPC  设备{dev.Name} 调用完成 {System.Text.Encoding.UTF8.GetString(response)}");
                     result = Ok(System.Text.Encoding.UTF8.GetString(response));
                 }
                 catch (MqttCommunicationTimedOutException ex1)
@@ -929,10 +1009,7 @@ namespace IoTSharp.Controllers
             }
             else
             {
-                if (DateTime.Now.Subtract( device.LastActive).TotalSeconds>device.Timeout/3)
-                {
-                    _queue.PublishDeviceStatus(device.Id, DeviceStatus.Good);
-                }
+                _queue.PublishActive(device.Id, ActivityStatus.Activity);
                 _queue.PublishTelemetryData(new PlayloadData() { DeviceId = device.Id, MsgBody = telemetrys, DataSide = DataSide.ClientSide, DataCatalog = DataCatalog.TelemetryData });
                 return Ok(new ApiResult<Dic>(ApiCode.Success, "OK", null));
             }
@@ -994,10 +1071,7 @@ namespace IoTSharp.Controllers
             }
             else
             {
-                if (DateTime.Now.Subtract(dev.LastActive).TotalSeconds > dev.Timeout / 3)
-                {
-                    _queue.PublishDeviceStatus(dev.Id, DeviceStatus.Good);
-                }
+                _queue.PublishActive(dev.Id, ActivityStatus.Activity);
                 _queue.PublishAttributeData(new PlayloadData() { DeviceId = dev.Id, MsgBody = attributes, DataSide = DataSide.ClientSide, DataCatalog = DataCatalog.AttributeData });
                 return Ok(new ApiResult(ApiCode.Success, "OK"));
             }
@@ -1027,10 +1101,7 @@ namespace IoTSharp.Controllers
             {
                 try
                 {
-                    if (dev.Online == false)
-                    {
-                        _queue.PublishDeviceStatus(dev.Id, DeviceStatus.Good);
-                    }
+                    _queue.PublishActive(dev.Id, ActivityStatus.Activity);
                     var cad = new CreateAlarmDto()
                     {
                         AlarmDetail = alarm.AlarmDetail,
@@ -1117,7 +1188,7 @@ namespace IoTSharp.Controllers
                 }
                 var rules = await _caching.GetAsync($"ruleid_{_dev.Id}_raw", async () =>
                 {
-                    var guids = await _context.GerDeviceRulesIdList(_dev.Id, MountType.RAW);
+                    var guids = await _context.GerDeviceRulesIdList(_dev.Id, EventType.RAW);
                     return guids;
                 }
              , TimeSpan.FromSeconds(_setting.RuleCachingExpiration));
@@ -1129,9 +1200,9 @@ namespace IoTSharp.Controllers
                         {
                             _logger.LogInformation($"{_dev.Id}的数据通过规则链{g}进行处理。");
 
-                            var result = await _flowRuleProcessor.RunFlowRules(g, Newtonsoft.Json.JsonConvert.DeserializeObject(body), _dev.Id, EventType.Normal, null);
-                     
-                       //     _context.SaveFlowResult(_dev.Id,g, result);
+                            var result = await _flowRuleProcessor.RunFlowRules(g, Newtonsoft.Json.JsonConvert.DeserializeObject(body), _dev.Id, FlowRuleRunType.Normal, null);
+
+                            //     _context.SaveFlowResult(_dev.Id,g, result);
 
                         });
                         return Ok(new ApiResult(ApiCode.Success, "OK"));

@@ -579,29 +579,23 @@ namespace IoTSharp.Data.MySql.Migrations
                     b.Property<Guid?>("CustomerId")
                         .HasColumnType("char(36)");
 
+                    b.Property<bool>("Deleted")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<Guid?>("DeviceModelId")
                         .HasColumnType("char(36)");
 
                     b.Property<int>("DeviceType")
                         .HasColumnType("int");
 
-                    b.Property<DateTime>("LastActive")
-                        .HasColumnType("timestamp");
-
                     b.Property<string>("Name")
                         .HasColumnType("longtext");
-
-                    b.Property<bool>("Online")
-                        .HasColumnType("tinyint(1)");
 
                     b.Property<Guid?>("OwnerId")
                         .HasColumnType("char(36)");
 
                     b.Property<Guid?>("ProduceId")
                         .HasColumnType("char(36)");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
 
                     b.Property<Guid?>("TenantId")
                         .HasColumnType("char(36)");
@@ -614,8 +608,6 @@ namespace IoTSharp.Data.MySql.Migrations
                     b.HasIndex("AuthorizedKeyId");
 
                     b.HasIndex("CustomerId");
-
-                    b.HasIndex("DeviceModelId");
 
                     b.HasIndex("OwnerId");
 
@@ -1454,6 +1446,15 @@ namespace IoTSharp.Data.MySql.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("longtext");
 
+                    b.Property<string>("GatewayConfiguration")
+                        .HasColumnType("longtext");
+
+                    b.Property<int>("GatewayType")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Icon")
+                        .HasColumnType("longtext");
+
                     b.Property<string>("Name")
                         .HasColumnType("longtext");
 
@@ -1467,6 +1468,91 @@ namespace IoTSharp.Data.MySql.Migrations
                     b.HasIndex("TenantId");
 
                     b.ToTable("Produces");
+                });
+
+            modelBuilder.Entity("IoTSharp.Data.ProduceDictionary", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid?>("Customer")
+                        .HasColumnType("char(36)");
+
+                    b.Property<int>("DataType")
+                        .HasColumnType("int");
+
+                    b.Property<string>("DefaultValue")
+                        .HasColumnType("longtext");
+
+                    b.Property<bool>("Display")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("DisplayName")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("KeyDesc")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("KeyName")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Place0")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Place1")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Place2")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Place3")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Place4")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Place5")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("PlaceOrder0")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("PlaceOrder1")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("PlaceOrder2")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("PlaceOrder3")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("PlaceOrder4")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("PlaceOrder5")
+                        .HasColumnType("longtext");
+
+                    b.Property<Guid?>("ProduceId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("Tag")
+                        .HasColumnType("longtext");
+
+                    b.Property<string>("Unit")
+                        .HasColumnType("longtext");
+
+                    b.Property<bool>("UnitConvert")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("UnitExpression")
+                        .HasColumnType("longtext");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProduceId");
+
+                    b.ToTable("ProduceDictionaries");
                 });
 
             modelBuilder.Entity("IoTSharp.Data.RefreshToken", b =>
@@ -2094,10 +2180,6 @@ namespace IoTSharp.Data.MySql.Migrations
                         .WithMany("Devices")
                         .HasForeignKey("CustomerId");
 
-                    b.HasOne("IoTSharp.Data.DeviceModel", "DeviceModel")
-                        .WithMany()
-                        .HasForeignKey("DeviceModelId");
-
                     b.HasOne("IoTSharp.Data.Gateway", "Owner")
                         .WithMany("Children")
                         .HasForeignKey("OwnerId");
@@ -2111,8 +2193,6 @@ namespace IoTSharp.Data.MySql.Migrations
                         .HasForeignKey("TenantId");
 
                     b.Navigation("Customer");
-
-                    b.Navigation("DeviceModel");
 
                     b.Navigation("Owner");
 
@@ -2330,6 +2410,13 @@ namespace IoTSharp.Data.MySql.Migrations
                     b.Navigation("Tenant");
                 });
 
+            modelBuilder.Entity("IoTSharp.Data.ProduceDictionary", b =>
+                {
+                    b.HasOne("IoTSharp.Data.Produce", null)
+                        .WithMany("Dictionaries")
+                        .HasForeignKey("ProduceId");
+                });
+
             modelBuilder.Entity("IoTSharp.Data.RefreshToken", b =>
                 {
                     b.HasOne("Microsoft.AspNetCore.Identity.IdentityUser", "User")
@@ -2495,6 +2582,8 @@ namespace IoTSharp.Data.MySql.Migrations
                     b.Navigation("DefaultAttributes");
 
                     b.Navigation("Devices");
+
+                    b.Navigation("Dictionaries");
                 });
 
             modelBuilder.Entity("IoTSharp.Data.Tenant", b =>

@@ -1,19 +1,18 @@
-<page-header>
-  <nz-card [nzBordered]="false" class="mb-lg" nzTitle="基本信息">
-    <sv-container size="small" col="2">
-      <sv label="设备Id">{{ device?.id }}</sv>
-      <sv label="设备名称">{{ device?.name }}</sv>
-      <sv label="设备名称">{{ device?.name }}</sv>
-      <sv label="类型">{{ device?.deviceType }}</sv>
-      <sv label="最后活动时间">{{ device?.lastActive }}</sv>
-      <sv label="在线状态">
-        <a>{{ device?.online }}</a>
-      </sv>
-    </sv-container>
-  </nz-card>
-  <nz-card [nzBordered]="false">
-    <nz-card-tab>
-      <nz-tabset nzSize="large">
+
+
+      <nz-tabset nzSize="small">
+        <nz-tab nzTitle="基本信息">
+          <sv-container  col="2" >
+            <sv label="设备Id">{{ device?.id }}</sv>
+            <sv label="设备名称">{{ device?.name }}</sv>
+            <sv label="类型">{{ device?.deviceType }}</sv>
+            <sv label="最后活动时间">{{ device?.lastActivityDateTime }}</sv>
+            <sv label="在线状态">
+              <a>{{ device?.active }}</a>
+            </sv>
+          </sv-container>
+        </nz-tab>
+
         <nz-tab nzTitle="属性">
           <nz-table [nzNoResult]="null" nzSize="small">
             <thead>
@@ -129,16 +128,18 @@
                     <nz-form-item>
                       <nz-form-label nzFor="name">取值方式</nz-form-label>
                       <nz-form-control>
-                        <nz-radio-group
-                          nzButtonStyle="solid"
-                          [(ngModel)]="qtemps.aggregate"
-                          [ngModelOptions]="{ standalone: true }"
-                          (ngModelChange)="aggregateChanged($event)"
-                        >
+                        <nz-radio-group nzButtonStyle="solid"
+                                        [(ngModel)]="qtemps.aggregate"
+                                        [ngModelOptions]="{ standalone: true }"
+                                        (ngModelChange)="aggregateChanged($event)">
+                          <label nz-radio-button nzValue="None">所有值</label>
                           <label nz-radio-button nzValue="Mean">平均值</label>
                           <label nz-radio-button nzValue="Median">中值</label>
+                          <label nz-radio-button nzValue="Last">末值</label>
+                          <label nz-radio-button nzValue="First">首值</label>
                           <label nz-radio-button nzValue="Max">最大值</label>
                           <label nz-radio-button nzValue="Min">最小值</label>
+                          <label nz-radio-button nzValue="Sum">合计</label>
                         </nz-radio-group>
                       </nz-form-control>
                     </nz-form-item>
@@ -405,6 +406,5 @@
           </st>
         </nz-tab>
       </nz-tabset>
-    </nz-card-tab>
-  </nz-card>
-</page-header>
+
+

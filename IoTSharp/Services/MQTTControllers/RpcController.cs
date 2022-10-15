@@ -1,7 +1,8 @@
-﻿using DotNetCore.CAP;
-using Dynamitey.DynamicObjects;
+﻿using IoTSharp.EventBus;
 using EasyCaching.Core;
+using IoTSharp.Contracts;
 using IoTSharp.Data;
+using IoTSharp.Data.Extensions;
 using IoTSharp.Extensions;
 using IoTSharp.FlowRuleEngine;
 using Microsoft.Extensions.DependencyInjection;
@@ -20,7 +21,7 @@ namespace IoTSharp.Services.MQTTControllers
         private readonly ILogger _logger;
         private readonly IServiceScopeFactory _scopeFactor;
         private readonly IEasyCachingProviderFactory _factory;
-        private readonly ICapPublisher _queue;
+        private readonly IPublisher _queue;
         private readonly FlowRuleProcessor _flowRuleProcessor;
         private readonly IEasyCachingProvider _caching;
         private readonly MQTTService _service;
@@ -31,7 +32,7 @@ namespace IoTSharp.Services.MQTTControllers
         private Device device;
 
         public RpcController(ILogger<RpcController> logger, IServiceScopeFactory scopeFactor, MQTTService mqttService,
-            IOptions<AppSettings> options, ICapPublisher queue, IEasyCachingProviderFactory factory, FlowRuleProcessor flowRuleProcessor
+            IOptions<AppSettings> options, IPublisher queue, IEasyCachingProviderFactory factory, FlowRuleProcessor flowRuleProcessor
             )
         {
             string _hc_Caching = $"{nameof(CachingUseIn)}-{Enum.GetName(options.Value.CachingUseIn)}";
@@ -57,7 +58,11 @@ namespace IoTSharp.Services.MQTTControllers
                 _devname = value;
                 _dev = GetSessionItem<Device>();
                 device = _dev.JudgeOrCreateNewDevice(devname, _scopeFactor, _logger);
-                _queue.PublishSubDeviceOnline(_dev.Id, device);
+                _queue.PublishActive(_dev.Id, ActivityStatus.Activity);
+                if (_dev.DeviceType == DeviceType.Gateway)
+                {
+                    _queue.PublishActive(device.Id, ActivityStatus.Activity);
+                }
             }
         }
 
@@ -71,7 +76,7 @@ namespace IoTSharp.Services.MQTTControllers
                 using (var scope = _scopeFactor.CreateScope())
                 using (var _dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>())
                 {
-                    var guids = await _dbContext.GerDeviceRpcRulesList(p_dev.Id, MountType.RPC, method);
+                    var guids = await _dbContext.GerDeviceRpcRulesList(p_dev.Id, EventType.RPC, method);
                     return guids;
                 }
             }
@@ -80,7 +85,7 @@ namespace IoTSharp.Services.MQTTControllers
             {
                 var obj = new { Message.Topic, Payload = Convert.ToBase64String(Message.Payload), ClientId };
                 _logger.LogInformation($"{ClientId}的rpc调用{Message.Topic} 方法 {method}通过规则链{rules.Value}进行处理。");
-                await _flowRuleProcessor.RunFlowRules(rules.Value, obj, p_dev.Id, EventType.Normal, null);
+                await _flowRuleProcessor.RunFlowRules(rules.Value, obj, p_dev.Id, FlowRuleRunType.Normal, null);
             }
             else
             {

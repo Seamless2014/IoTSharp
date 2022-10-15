@@ -1,4 +1,5 @@
 ﻿using System;
+using IoTSharp.Contracts;
 using IoTSharp.Data;
 
 namespace IoTSharp.Dtos
@@ -17,15 +18,6 @@ namespace IoTSharp.Dtos
         /// </summary>
         public DeviceType DeviceType { get; set; }
 
-        /// <summary>
-        /// 在线
-        /// </summary>
-        public bool Online { get; set; }
-
-        /// <summary>
-        /// 最后一次活跃时间
-        /// </summary>
-        public DateTime LastActive { get; set; }
 
         /// <summary>
         /// 超时时间 秒数
@@ -33,7 +25,6 @@ namespace IoTSharp.Dtos
         public int Timeout { get; set; }
 
 
-        public int Status { get; set; }
 
         public int EnableTrace { get; set; }
 

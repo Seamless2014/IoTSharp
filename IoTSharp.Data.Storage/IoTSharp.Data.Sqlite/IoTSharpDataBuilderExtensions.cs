@@ -1,12 +1,15 @@
 ﻿
-using EFCore.Sharding;
 using IoTSharp;
+using IoTSharp.Contracts;
 using IoTSharp.Data;
 using IoTSharp.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Linq;
+using ShardingCore.Core.ShardingConfigurations;
+using Microsoft.Data.Sqlite;
+using System.IO;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -16,23 +19,34 @@ namespace Microsoft.Extensions.DependencyInjection
 
         public static void ConfigureSqlite(this IServiceCollection services, string connectionString, int poolSize, IHealthChecksBuilder checksBuilder, HealthChecksUIBuilder healthChecksUI)
         {
+            SqliteConnectionStringBuilder builder = new SqliteConnectionStringBuilder(connectionString);
+            var fi = new FileInfo(builder.DataSource);
+            if (!fi.Directory.Exists) fi.Directory.Create();
+
             services.AddEntityFrameworkSqlite();
             services.AddSingleton<IDataBaseModelBuilderOptions>( c=> new SqliteModelBuilderOptions());
             services.AddDbContextPool<ApplicationDbContext>(builder =>
             {
-                builder.UseSqlite(connectionString, s =>  s.MigrationsAssembly("IoTSharp.Data.Sqlite"));
+              
+                builder.UseSqlite(connectionString, s =>  s.MigrationsAssembly("IoTSharp.Data.Sqlite").UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery));
                 builder.UseInternalServiceProvider(services.BuildServiceProvider());
             }
      , poolSize);
             checksBuilder.AddSqlite(connectionString, name: "IoTSharp.Data.Sqlite");
-            healthChecksUI.AddSqliteStorage("Data Source=health_checks.db");
+            healthChecksUI.AddSqliteStorage($"Data Source={fi.DirectoryName}{Path.DirectorySeparatorChar}health_checks.db");
 
         }
 
-        public static void UseSQLiteToSharding(this IShardingBuilder builder, string connectionString, ShardingByDateMode expandBy)
+        public static void UseSQLiteToSharding(this ShardingConfigOptions options)
         {
-            builder.AddDataSource(connectionString, ReadWriteType.Read | ReadWriteType.Write, DatabaseType.SQLite);
-            builder.SetDateSharding<TelemetryData>(nameof(TelemetryData.DateTime), (ExpandByDateMode)(int)expandBy, DateTime.Now);
+            options.UseShardingQuery((conStr, builder) =>
+            {
+                builder.UseSqlite(conStr);
+            });
+            options.UseShardingTransaction((conn, builder) =>
+            {
+                builder.UseSqlite(conn);
+            });
         }
 
         public static void SetCaseInsensitiveSearchesForSQLite(this ModelBuilder modelBuilder)

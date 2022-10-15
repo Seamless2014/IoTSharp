@@ -1,5 +1,4 @@
-﻿using DotNetCore.CAP;
-using Dynamitey.DynamicObjects;
+﻿using IoTSharp.EventBus;
 using EasyCaching.Core;
 using IoTSharp.Data;
 using IoTSharp.Extensions;
@@ -12,6 +11,7 @@ using MQTTnet.AspNetCore.Routing;
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using IoTSharp.Contracts;
 
 namespace IoTSharp.Services.MQTTControllers
 {
@@ -21,11 +21,11 @@ namespace IoTSharp.Services.MQTTControllers
     {
         private readonly ILogger _logger;
         private readonly IServiceScopeFactory _scopeFactor;
-        private readonly ICapPublisher _queue;
+        private readonly IPublisher _queue;
         private string _devname;
         private Device device;
 
-        public TelemetryController(ILogger<TelemetryController> logger, IServiceScopeFactory scopeFactor, ICapPublisher queue)
+        public TelemetryController(ILogger<TelemetryController> logger, IServiceScopeFactory scopeFactor, IPublisher queue)
         {
 
             _logger = logger;
@@ -45,7 +45,11 @@ namespace IoTSharp.Services.MQTTControllers
                 _devname = value;
                 var _dev = GetSessionItem<Device>();
                 device = _dev.JudgeOrCreateNewDevice(devname, _scopeFactor, _logger);
-                _queue.PublishSubDeviceOnline(_dev.Id, device);
+                _queue.PublishActive(_dev.Id, ActivityStatus.Activity);
+                if (_dev.DeviceType == DeviceType.Gateway)
+                {
+                    _queue.PublishActive(device.Id, ActivityStatus.Activity);
+                }
             }
         }
 

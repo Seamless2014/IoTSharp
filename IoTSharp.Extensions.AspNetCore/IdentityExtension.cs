@@ -12,10 +12,10 @@ namespace Microsoft.AspNetCore.Identity
         {
             string email = user.Email;
             // Create a new instance of the MD5CryptoServiceProvider object.  
-            MD5 md5Hasher = MD5.Create();
+            var _SHA512 =  SHA512.Create();
 
             // Convert the input string to a byte array and compute the hash.  
-            byte[] data = md5Hasher.ComputeHash(Encoding.Default.GetBytes(email));
+            byte[] data = _SHA512.ComputeHash(Encoding.Default.GetBytes(email));
 
             // Create a new Stringbuilder to collect the bytes  
             // and create a string.  
@@ -27,7 +27,7 @@ namespace Microsoft.AspNetCore.Identity
             {
                 sBuilder.Append(data[i].ToString("x2"));
             }
-            return string.Format("http://www.gravatar.com/avatar/{0}", sBuilder.ToString()); ;  // Return the hexadecimal string. 
+            return string.Format("https://www.gravatar.com/avatar/{0}", sBuilder.ToString()); ;  // Return the hexadecimal string. 
         }
     }
 }

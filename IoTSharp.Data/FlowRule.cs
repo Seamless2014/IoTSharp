@@ -4,6 +4,7 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Threading.Tasks;
+using IoTSharp.Contracts;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace IoTSharp.Data
@@ -28,7 +29,7 @@ namespace IoTSharp.Data
 
         public double Version { get; set; }
         public Guid CreateId { get; set; }
-        public MountType MountType { get; set; }
+        public EventType MountType { get; set; }
         public Tenant Tenant { get; set; }
 
         public Customer Customer { get; set; }

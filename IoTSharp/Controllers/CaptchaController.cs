@@ -1,5 +1,6 @@
 ﻿using Castle.Components.DictionaryAdapter;
 using EasyCaching.Core;
+using IoTSharp.Contracts;
 using IoTSharp.Data;
 using IoTSharp.Dtos;
 using IoTSharp.Models;
@@ -11,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 
 namespace IoTSharp.Controllers
 {
@@ -20,7 +22,6 @@ namespace IoTSharp.Controllers
     [Route("api/[controller]/[action]")]
     public class CaptchaController : ControllerBase
     {
-        private readonly Random random = new Random();
         private readonly IEasyCachingProvider _caching;
         private readonly IWebHostEnvironment _hostingEnvironment;
   
@@ -83,7 +84,7 @@ namespace IoTSharp.Controllers
         private ModelCaptcha CreateImage()
         {
             using var buzzlefile = new MemoryStream(Properties.Resources.ResourceManager.GetObject("buzzle_template_png") as byte[]);
-            using var orginfile = new MemoryStream(Properties.Resources.ResourceManager.GetObject($"slide{random.Next(1, 9)}_jpg") as byte[]);
+            using var orginfile = new MemoryStream(Properties.Resources.ResourceManager.GetObject($"slide{RandomNumberGenerator.GetInt32(1,9)}_jpg") as byte[]);
             using var buzzlefilestream = new SKManagedStream(buzzlefile);
             using var orginfilestream = new SKManagedStream(orginfile);
             using var buzzle = SKBitmap.Decode(buzzlefilestream);
@@ -92,8 +93,8 @@ namespace IoTSharp.Controllers
             int buzzleHeight = buzzle.Height;
             int oriImageWidth = original.Width;
             int oriImageHeight = original.Height;
-            int randomlocaltionx = random.Next(oriImageWidth - 2 * buzzleWidth) + buzzleWidth;
-            int randomlocaltiony = random.Next(oriImageHeight - buzzleHeight);
+            int randomlocaltionx = RandomNumberGenerator.GetInt32(oriImageWidth - 2 * buzzleWidth) + buzzleWidth;
+            int randomlocaltiony = RandomNumberGenerator.GetInt32(oriImageHeight - buzzleHeight);
             return Cut(original, buzzle, randomlocaltionx, randomlocaltiony, buzzleWidth, buzzleHeight);
         }
 

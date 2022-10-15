@@ -1,9 +1,9 @@
 ﻿using EasyCaching.Core;
+using IoTSharp.Contracts;
 using IoTSharp.Controllers.Models;
 using IoTSharp.Data;
 using IoTSharp.Dtos;
 using IoTSharp.Models;
-using LinqKit;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
@@ -17,10 +17,11 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using System.Web;
+using ShardingCore.Extensions;
 
 namespace IoTSharp.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/[controller]/[action]")]
     [ApiController]
     [Authorize]
     public class I18NController : ControllerBase
@@ -38,7 +39,7 @@ namespace IoTSharp.Controllers
             _dBInitializer = dBInitializer;
         }
 
-        [HttpGet("[action]")]
+        [HttpGet()]
         [AllowAnonymous]
         public async Task<ApiResult<Dictionary<string, string>>> Current(string lang)
         {
@@ -91,7 +92,7 @@ namespace IoTSharp.Controllers
             return new ApiResult<Dictionary<string, string>>(ApiCode.Success, "OK", i18n.Select(c => new { c.KeyName, c.ValueZHCN }).ToDictionary(x => x.KeyName, y => y.ValueZHCN));
         }
 
-        [HttpPost("[action]")]
+        [HttpPost()]
         public ApiResult<PagedData<BaseI18N>> Index([FromBody] I18NParam m)
         {
             Expression<Func<BaseI18N, bool>> condition = x => x.Status > -1;
@@ -106,7 +107,7 @@ namespace IoTSharp.Controllers
             });
         }
 
-        [HttpGet("[action]")]
+        [HttpGet()]
         public ApiResult<BaseI18N> Get(int id)
         {
             var i18N = _context.BaseI18Ns.SingleOrDefault(c => c.Id == id);
@@ -120,7 +121,7 @@ namespace IoTSharp.Controllers
             }
         }
 
-        [HttpGet("[action]")]
+        [HttpGet()]
         public ApiResult<bool> CheckExist(string key)
         {
             if (string.IsNullOrEmpty(key))
@@ -133,7 +134,7 @@ namespace IoTSharp.Controllers
             }
         }
 
-        [HttpPost("[action]")]
+        [HttpPost()]
         public ApiResult<bool> Save(BaseI18N m)
         {
             var i18n = new BaseI18N()
@@ -175,7 +176,7 @@ namespace IoTSharp.Controllers
             return new ApiResult<bool>(ApiCode.CantFindObject, "OK", true);
         }
 
-        [HttpGet("[action]")]
+        [HttpGet()]
         public ApiResult<bool> Delete(long id)
         {
             var i18n = _context.BaseI18Ns.FirstOrDefault(c => c.Id == id);
@@ -192,7 +193,7 @@ namespace IoTSharp.Controllers
             return new ApiResult<bool>(ApiCode.CantFindObject, "can't find this object", false);
         }
 
-        [HttpGet("[action]")]
+        [HttpGet()]
         public ApiResult<bool> SetStatus(int id)
         {
             var obj = _context.BaseI18Ns.FirstOrDefault(c => c.Id == id);
@@ -206,7 +207,7 @@ namespace IoTSharp.Controllers
             return new ApiResult<bool>(ApiCode.CantFindObject, "can't find this object", false);
         }
 
-        [HttpPost("[action]")]
+        [HttpPost()]
         public ApiResult<bool> Update(BaseI18N m)
         {
             var i18n = _context.BaseI18Ns.FirstOrDefault(c => c.Id == m.Id);
@@ -248,13 +249,12 @@ namespace IoTSharp.Controllers
             return new ApiResult<bool>(ApiCode.CantFindObject, "can't find this object", false);
         }
 
-        [HttpGet("[action]")]
+        [HttpGet()]
         public async Task<ApiResult<List<BaiduTranslateResult>>> Translate(string Words)
         {
             string q = Words;
             string from = _profile.Value.DefaultLang ?? "zh";
             string appId = _profile.Value.AppKey;
-            Random rd =  new Random (DateTime.Now.Millisecond);
             string secretKey = _profile.Value.AppSecret;
             int _wait = _profile.Value.ApiInterval ?? 80;
             List<BaiduTranslateResult> l = new List<BaiduTranslateResult>();
@@ -264,9 +264,9 @@ namespace IoTSharp.Controllers
                 string to = item.Target;
                 using (HttpClient client = new HttpClient())
                 {
-                    string salt = rd.Next(100000).ToString();
+                    string salt = RandomNumberGenerator.GetInt32(100000).ToString();
                     string sign = EncryptString(appId + q + salt + secretKey);
-                    string url = "http://api.fanyi.baidu.com/api/trans/vip/translate?";
+                    string url = "https://api.fanyi.baidu.com/api/trans/vip/translate?";
                     url += "q=" + HttpUtility.UrlEncode(q);
                     url += "&from=" + from;
                     url += "&to=" + to;

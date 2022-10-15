@@ -1,10 +1,10 @@
-﻿using DotNetCore.CAP;
+﻿using IoTSharp.EventBus;
 using HealthChecks.UI.Configuration;
+using IoTSharp.Contracts;
 using IoTSharp.Data;
+using IoTSharp.Data.Extensions;
 using IoTSharp.Extensions;
-using IoTSharp.HealthChecks.Taos;
 using IoTSharp.Services;
-using IoTSharp.X509Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Identity;
@@ -31,6 +31,7 @@ using System.Security.Claims;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
+using IoTSharp.Extensions.X509;
 
 namespace IoTSharp
 {
@@ -97,7 +98,7 @@ namespace IoTSharp
         /// <param name="custId"></param>
         /// <returns></returns>
         public static Customer GetCustomer(this ApplicationDbContext context, Guid custId) 
-            => context.Customer.Include(c => c.Tenant).FirstOrDefault(c => c.Id  ==  custId);
+            => context.Customer.Include(c => c.Tenant).AsSingleQuery().FirstOrDefault(c => c.Id  ==  custId);
       /// <summary>
       /// 获取指定的租户信息
       /// </summary>
@@ -129,7 +130,7 @@ namespace IoTSharp
         /// <returns></returns>
         public static Guid GetTenantId(this ClaimsPrincipal _user)
         {
-            return  Guid.Parse( _user.FindFirstValue(IoTSharpClaimTypes.Tenant));
+            return  Guid.Parse( _user.FindFirstValue(IoTSharpClaimTypes.Tenant)??Guid.Empty.ToString());
         }
         /// <summary>
         /// 获取当前用户的客户ID
@@ -228,7 +229,7 @@ namespace IoTSharp
             build.AddDnsName(domainname);
             build.AddIpAddress(iP);
             build.AddEmailAddress(email??"mysticboy@live.com");
-            string name = $"C=CN,CN={iP.ToString()},ST=IoTSharp,O={Dns.GetHostName()},OU= CA_{MethodBase.GetCurrentMethod().Module.Assembly.GetName().Name}";
+            string name = $"C=CN,CN={domainname},ST=IoTSharp,O={Dns.GetHostName()},OU= CA_{MethodBase.GetCurrentMethod().Module.Assembly.GetName().Name}";
             var broker = CACertificate.CreateTlsClientRSA(name, build);
             broker.SavePem(pubfile, pivfile);
         }
@@ -246,9 +247,9 @@ namespace IoTSharp
         }
 
 
-        public static X509Certificate2 CreateCA(this string Domain, string capubfile, string capivfile)
+        public static X509Certificate2 CreateCA(this Uri Domain, string capubfile, string capivfile)
         {
-            var ca = X509Self.CreateCA($"C=CN,CN={Domain},ST=IoTSharp,O={Dns.GetHostName()},OU=CA_{MethodBase.GetCurrentMethod().Module.Assembly.GetName().Name}");
+            var ca = X509Self.CreateCA($"C=CN,CN={Domain.Host},ST=IoTSharp,O={Dns.GetHostName()},OU=CA_{MethodBase.GetCurrentMethod().Module.Assembly.GetName().Name}");
             ca.SavePem(capubfile, capivfile);
             return ca;
         }
@@ -319,7 +320,7 @@ namespace IoTSharp
                 if (devname != "me" && device.DeviceType == DeviceType.Gateway)
                 {
                     var ch = from g in _dbContext.Gateway.Include(g => g.Tenant).Include(g => g.Customer).Include(c => c.Children) where g.Id == device.Id select g;
-                    var gw = ch.FirstOrDefault();
+                    var gw = ch.AsSplitQuery().FirstOrDefault();
                     if(gw == null)
                     {//未处理null的情况
 
@@ -330,22 +331,22 @@ namespace IoTSharp
                         var subdev = from cd in gw.Children where cd.Name == devname select cd;
                         if (!subdev.Any())
                         {
-                            devicedatato = new Device() { Id = Guid.NewGuid(), Name = devname, DeviceType = DeviceType.Device, Tenant = gw.Tenant, Customer = gw.Customer, Owner = gw, LastActive = DateTime.Now, Timeout = 300 };
+                            devicedatato = new Device() { Id = Guid.NewGuid(), Name = devname, DeviceType = DeviceType.Device, Tenant = gw.Tenant, Customer = gw.Customer, Owner = gw,  Timeout = 300 };
                             gw.Children.Add(devicedatato);
                             _dbContext.AfterCreateDevice(devicedatato);
-                            _logger.LogInformation($"网关 {gw.Id}-{gw.Name}在线.最后活动时间{gw.LastActive},添加了子设备{devicedatato.Name}");
+                            _logger.LogInformation($"网关 {gw.Id}-{gw.Name}在线.添加了子设备{devicedatato.Name}");
                         }
                         else
                         {
                             devicedatato = subdev.FirstOrDefault();
-                            _logger.LogInformation($"网关子设备 {devicedatato.Id}-{devicedatato.Name}在线.最后活动时间{devicedatato.LastActive}");
+                            _logger.LogInformation($"网关子设备 {devicedatato.Id}-{devicedatato.Name}在线.");
                         }
                     }
                 }
                 else
                 {
                     devicedatato = _dbContext.Device.Find(device.Id);
-                    _logger.LogInformation($"独立设备 {devicedatato.Id}-{devicedatato.Name}在线.最后活动时间{devicedatato.LastActive}");
+                    _logger.LogInformation($"独立设备 {devicedatato.Id}-{devicedatato.Name}在线.");
                 }
                 _dbContext.SaveChanges();
             }

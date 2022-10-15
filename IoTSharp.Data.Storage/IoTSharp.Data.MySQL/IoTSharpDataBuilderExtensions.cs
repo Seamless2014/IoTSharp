@@ -1,12 +1,13 @@
 ﻿
-using EFCore.Sharding;
 using IoTSharp;
+using IoTSharp.Contracts;
 using IoTSharp.Data;
 using IoTSharp.Data.MySQL;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
 using System.Diagnostics;
+using ShardingCore.Core.ShardingConfigurations;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -29,7 +30,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddDbContextPool<ApplicationDbContext>(builder =>
             {
                 builder.UseInternalServiceProvider(services.BuildServiceProvider());
-                builder.UseMySql(connectionString, serverVersion, s => s.MigrationsAssembly("IoTSharp.Data.MySQL"));
+                builder.UseMySql(connectionString, serverVersion, s => s.MigrationsAssembly("IoTSharp.Data.MySQL").UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery));
             }
           , poolSize );
            
@@ -37,10 +38,16 @@ namespace Microsoft.Extensions.DependencyInjection
             healthChecksUI.AddMySqlStorage(connectionString);
       
         }
-        public static void UseMySqlToSharding(this IShardingBuilder builder, string connectionString, ShardingByDateMode expandBy)
+        public static void UseMySqlToSharding(this ShardingConfigOptions options)
         {
-            builder.AddDataSource(connectionString, ReadWriteType.Read | ReadWriteType.Write, DatabaseType.MySql);
-            builder.SetDateSharding<TelemetryData>(nameof(TelemetryData.DateTime),  (ExpandByDateMode)(int)expandBy, DateTime.Now);
+            options.UseShardingQuery((conStr, builder) =>
+            {
+                builder.UseMySql(conStr, new MySqlServerVersion(new Version()));
+            });
+            options.UseShardingTransaction((conn, builder) =>
+            {
+                builder.UseMySql(conn, new MySqlServerVersion(new Version()));
+            });
         }
     }
 }

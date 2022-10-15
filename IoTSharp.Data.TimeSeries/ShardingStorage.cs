@@ -1,29 +1,19 @@
-﻿using EFCore.Sharding;
-using IoTSharp.Contracts;
+﻿using IoTSharp.Contracts;
 using IoTSharp.Data;
+using IoTSharp.Data.Shardings;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace IoTSharp.Storage
 {
-    /// <summary>
-    /// 由于此模式目前无法通过EFCore.Sharding 进行Group By 获取最新遥测数据， 和Select  新对象， 所以， 最新遥测依然从DataStorage表里获取，历史从分表里获取
-    /// 更多内容可以参考<seealso cref="https://github.com/Coldairarrow/EFCore.Sharding/issues/52"/>
-    /// </summary>
     public class ShardingStorage : IStorage
     {
         private readonly AppSettings _appSettings;
         private readonly ILogger _logger;
-        //private readonly IServiceScope scope;
         private readonly IServiceScopeFactory _scopeFactor;
-      
 
         public ShardingStorage(ILogger<ShardingStorage> logger, IServiceScopeFactory scopeFactor
            , IOptions<AppSettings> options
@@ -31,7 +21,6 @@ namespace IoTSharp.Storage
         {
             _appSettings = options.Value;
             _logger = logger;
-            //scope = scopeFactor.CreateScope();
             _scopeFactor = scopeFactor;
         }
 
@@ -53,7 +42,7 @@ namespace IoTSharp.Storage
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"{ deviceId}数据处理失败{ex.Message} {ex.InnerException?.Message} ");
+                _logger.LogError(ex, $"{deviceId}数据处理失败{ex.Message} {ex.InnerException?.Message} ");
                 throw;
             }
         }
@@ -77,48 +66,44 @@ namespace IoTSharp.Storage
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, $"{ deviceId}数据处理失败{ex.Message} {ex.InnerException?.Message} ");
+                _logger.LogError(ex, $"{deviceId}数据处理失败{ex.Message} {ex.InnerException?.Message} ");
                 throw;
             }
         }
 
-         
-
-        public Task<List<TelemetryDataDto>> LoadTelemetryAsync(Guid deviceId, string keys, DateTime begin, DateTime end, TimeSpan every, Aggregate aggregate)
+        public async Task<List<TelemetryDataDto>> LoadTelemetryAsync(Guid deviceId, string keys, DateTime begin, DateTime end, TimeSpan every, Aggregate aggregate)
         {
-            return Task.Run(() =>
+            List<TelemetryDataDto> result = new List<TelemetryDataDto>();
+            try
             {
-                try
+                using (var scope = _scopeFactor.CreateScope())
                 {
-                    using (var scope = _scopeFactor.CreateScope())
+                    using (var context = scope.ServiceProvider.GetRequiredService<ShardingDbContext>())
                     {
-                        using (var context = scope.ServiceProvider.GetService<IShardingDbAccessor>())
+                        var lst = new List<TelemetryDataDto>();
+                        var kv = await context.Set<TelemetryData>()
+                            .Where(t => t.DeviceId == deviceId && t.DateTime >= begin && t.DateTime < end)
+                            .Select(t => new TelemetryDataDto() { DateTime = t.DateTime, KeyName = t.KeyName, Value = t.ToObject(), DataType = t.Type }).ToListAsync();
+                        if (!string.IsNullOrEmpty(keys))
                         {
-                            var lst = new List<TelemetryDataDto>();
-                            var kv = context.GetIShardingQueryable<TelemetryData>()
-                                .Where(t => t.DeviceId == deviceId && t.DateTime >= begin && t.DateTime < end)
-                                .ToList().Select(t => new TelemetryDataDto() { DateTime = t.DateTime, KeyName = t.KeyName, Value = t.ToObject() });
-                            if (!string.IsNullOrEmpty(keys))
-                            {
-                                lst = kv.Where(t => keys.Split(',', ' ', ';').Contains(t.KeyName)).ToList();
-                            }
-                            else
-                            {
-                                lst = kv.ToList();
-                            }
-                            return lst;
+                            lst = kv.Where(t => keys.Split(',', ' ', ';').Contains(t.KeyName)).ToList();
                         }
+                        else
+                        {
+                            lst = kv.ToList();
+                        }
+                        result= AggregateDataHelpers. AggregateData(lst,begin, end,  every, aggregate);
                     }
                 }
-                catch (Exception ex)
-                {
-                    _logger.LogError(ex, $"{ deviceId}数据处理失败{ex.Message} {ex.InnerException?.Message} ");
-                    throw;
-                }
-            });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, $"{deviceId}数据处理失败{ex.Message} {ex.InnerException?.Message} ");
+                throw;
+            }
+            return result;
         }
- 
-        
+
         public async Task<(bool result, List<TelemetryData> telemetries)> StoreTelemetryAsync(PlayloadData msg)
         {
             bool result = false;
@@ -128,28 +113,29 @@ namespace IoTSharp.Storage
             {
                 using var scope = _scopeFactor.CreateScope();
 
-                using (var db = scope.ServiceProvider.GetService<IShardingDbAccessor>())
+                using (var db = scope.ServiceProvider.GetRequiredService<ShardingDbContext>())
                 {
+              
                     var lst = new List<TelemetryData>();
                     msg.MsgBody.ToList().ForEach(kp =>
                                      {
                                          if (kp.Value != null)
                                          {
-                                             var tdata = new TelemetryData() { DateTime = msg.ts, DeviceId = msg.DeviceId, KeyName = kp.Key};
+                                             var tdata = new TelemetryData() { DateTime = msg.ts, DeviceId = msg.DeviceId, KeyName = kp.Key };
                                              tdata.FillKVToMe(kp);
                                              lst.Add(tdata);
                                              telemetries.Add(tdata);
                                          }
                                      });
-                    int ret = await db.InsertAsync(lst);
-                    _logger.LogInformation($"新增({msg.DeviceId})遥测数据{ret}");
+                    await db.Set<TelemetryData>().AddRangeAsync(lst);
+                    await db.SaveChangesAsync();
+                    _logger.LogInformation($"新增({msg.DeviceId})遥测数据1");
                 }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, $"{msg.DeviceId}数据处理失败{ex.Message} {ex.InnerException?.Message} ");
             }
-
 
             try
             {
@@ -171,7 +157,7 @@ namespace IoTSharp.Storage
             {
                 _logger.LogError(ex, $"{msg.DeviceId}数据处理失败{ex.Message} {ex.InnerException?.Message} ");
             }
-            return (result,telemetries);
+            return (result, telemetries);
         }
     }
 }

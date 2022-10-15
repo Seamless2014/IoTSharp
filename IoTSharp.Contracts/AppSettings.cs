@@ -1,13 +1,13 @@
-﻿
-using IoTSharp.Data;
+﻿ 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace IoTSharp
+namespace IoTSharp.Contracts
 {
     [JsonConverter(typeof(StringEnumConverter))]
     public enum TelemetryStorage
@@ -51,12 +51,24 @@ namespace IoTSharp
         LiteDB,
         SQlite
     }
+
+    [JsonConverter(typeof(StringEnumConverter))]
+    public enum EventBusFramework
+    {
+        CAP,
+        Shashlik,
+    }
     public class AppSettings
     {
+        private DateTime shardingBeginTime;
+
         public string JwtKey { get; set; }
         public string JwtIssuer { get; set; }
         public string JwtAudience { get; set; }
         public double JwtExpireHours { get; set; }
+
+        [DefaultValue(EventBusFramework.CAP)]
+        public EventBusFramework EventBus { get; set; } = EventBusFramework.CAP;
         /// <summary>
         /// Broker settings
         /// </summary>
@@ -84,6 +96,42 @@ namespace IoTSharp
         public DataBaseType DataBase { get; set; } = DataBaseType.PostgreSql;
         public int RuleCachingExpiration { get; set; } = 60;
         public ShardingByDateMode ShardingByDateMode { get; set; } = ShardingByDateMode.PerMonth;
+        public DateTime ShardingBeginTime {
+            get => shardingBeginTime;
+            set
+            {
+                if (value == DateTime.MinValue || value.Year <= 1970)
+                {
+                    switch (ShardingByDateMode)
+                    {
+                        case ShardingByDateMode.PerMinute:
+                            shardingBeginTime = DateTime.Now.AddMinutes(-5);
+                            break;
+                        case ShardingByDateMode.PerHour:
+                            shardingBeginTime = DateTime.Now.AddHours(-1);
+                            break;
+                        case ShardingByDateMode.PerDay:
+                            shardingBeginTime = DateTime.Now.AddDays(-1).Date;
+                            break;
+                        case ShardingByDateMode.PerMonth:
+                            shardingBeginTime = DateTime.Now.AddMonths(-1).Date;
+                            break;
+                        case ShardingByDateMode.PerYear:
+                            shardingBeginTime = DateTime.Now.AddYears(-1).Date;
+                            break;
+                        default:
+                            shardingBeginTime = value;
+                            break;
+                    }
+                }
+                else
+                {
+                    shardingBeginTime = value;
+                }
+                
+            }
+         
+        }
     }
     public enum ShardingByDateMode
     {

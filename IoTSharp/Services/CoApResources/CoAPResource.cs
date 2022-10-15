@@ -1,6 +1,6 @@
 ﻿using CoAP;
 using CoAP.Server.Resources;
-using DotNetCore.CAP;
+using IoTSharp.EventBus;
 using IoTSharp.Contracts;
 using IoTSharp.Data;
 using IoTSharp.Extensions;
@@ -26,9 +26,9 @@ namespace IoTSharp.Services.CoApResources
         };
 
         private readonly ILogger _logger;
-        private readonly ICapPublisher _eventBus;
+        private readonly IPublisher _eventBus;
 
-        public CoApResource(string name, ApplicationDbContext dbContext, ILogger logger, ICapPublisher eventBus)
+        public CoApResource(string name, ApplicationDbContext dbContext, ILogger logger, IPublisher eventBus)
        : base(name)
         {
             Attributes.Title = name;
@@ -108,25 +108,25 @@ namespace IoTSharp.Services.CoApResources
                             default:
                                 break;
                         }
-                        var mcr = await _dbContext.DeviceIdentities.Include(d => d.Device).FirstOrDefaultAsync(di => di.IdentityType == IdentityType.AccessToken && di.IdentityId == acctoken);
+                        var mcr = await _dbContext.DeviceIdentities.Include(d => d.Device).AsSingleQuery().FirstOrDefaultAsync(di => di.IdentityType == IdentityType.AccessToken && di.IdentityId == acctoken);
                         var dev = mcr?.Device;
                         if (mcr != null && dev != null)
                         {
                             switch (_res)
                             {
                                 case CoApRes.Attributes:
-                                    _eventBus.PublishAttributeData(new PlayloadData() { MsgBody = keyValues, DataCatalog = DataCatalog.AttributeData, DataSide = DataSide.ClientSide, DeviceId = dev.Id });
+                                    await   _eventBus.PublishAttributeData(new PlayloadData() { MsgBody = keyValues, DataCatalog = DataCatalog.AttributeData, DataSide = DataSide.ClientSide, DeviceId = dev.Id });
                                     exchange.Respond(StatusCode.Changed, $"OK");
                                     break;
 
                                 case CoApRes.Telemetry:
-                                    _eventBus.PublishTelemetryData(new PlayloadData() { MsgBody = keyValues, DataCatalog = DataCatalog.AttributeData, DataSide = DataSide.ClientSide, DeviceId = dev.Id });
+                                    await _eventBus.PublishTelemetryData(new PlayloadData() { MsgBody = keyValues, DataCatalog = DataCatalog.AttributeData, DataSide = DataSide.ClientSide, DeviceId = dev.Id });
                                     exchange.Respond(StatusCode.Created, $"OK");
                                     break;
 
                                 case CoApRes.Alarm:
                                     var dto = Newtonsoft.Json.JsonConvert.DeserializeObject<CreateAlarmDto>(exchange.Request.PayloadString);
-                                    _eventBus.PublishDeviceAlarm(dto);
+                                     await _eventBus.PublishDeviceAlarm(dto);
                                     break;
 
                                 default:

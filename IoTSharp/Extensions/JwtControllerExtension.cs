@@ -28,8 +28,24 @@ namespace IoTSharp.Extensions
                 Roles = @this.User.Claims.Where(c => c.Type == ClaimTypes.Role).Select(x => x.Value).ToArray(),
                 Email = @this.User.GetEmail(),
                 Tenant = @this.User.GetTenantId(),
-                Comstomer =@this.User.GetCustomerId()
+                Customer =@this.User.GetCustomerId()
             };
+        }
+        public static string GetStorageRoot(this ControllerBase @this)
+        {
+            return $"/{@this.User.GetTenantId()}/{@this.User.GetCustomerId()}/";
+        }
+        public static string GetStorageRoot(this ControllerBase @this,Produce produce)
+        {
+            return $"/{@this.User.GetTenantId()}/{@this.User.GetCustomerId()}/{produce.Id}";
+        }
+        public static string GetStorageRoot(this ControllerBase @this, Device device)
+        {
+            return $"/{@this.User.GetTenantId()}/{@this.User.GetCustomerId()}/{device.Id}";
+        }
+        public static string GetStorageRoot(this ControllerBase @this, Gateway device)
+        {
+            return $"/{@this.User.GetTenantId()}/{@this.User.GetCustomerId()}/{device.Id}";
         }
     }
 }

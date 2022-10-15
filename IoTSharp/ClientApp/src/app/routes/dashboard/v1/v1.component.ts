@@ -16,7 +16,7 @@ import { SettingsService, _HttpClient } from '@delon/theme';
 import { NzSafeAny } from 'ng-zorro-antd/core/types';
 import { WidgetItem } from 'src/app/models/widgetItem';
 import { HeaderkanbanComponent } from '../wedgits/headerkanban/headerkanban.component';
-import { NewdeviceComponent } from '../wedgits/newdevice/newdevice.component';
+
 import { StatisticsComponent } from '../wedgits/statistics/statistics.component';
 import { WarningboardComponent } from '../wedgits/warningboard/warningboard.component';
 import { widgetdirective } from '../wedgits/widgetdirective';
@@ -37,10 +37,6 @@ export class DashboardV1Component implements OnInit {
     new WidgetItem('statistics', StatisticsComponent, {
       //  someneedtransferdata: "yourdata,don't forget declara a @Input someneedtransferdata Property ",
     }),
-    new WidgetItem('lists', NewdeviceComponent, {
-      //  someneedtransferdata: "yourdata,don't forget declara a @Input someneedtransferdata Property ",
-    }),
-
     new WidgetItem('warning', WarningboardComponent, {
       //  someneedtransferdata: "yourdata,don't forget declara a @Input someneedtransferdata Property ",
     })

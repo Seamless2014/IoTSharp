@@ -1,11 +1,12 @@
 ﻿
-using EFCore.Sharding;
 using IoTSharp;
+using IoTSharp.Contracts;
 using IoTSharp.Data;
 using IoTSharp.Data.PostgreSQL;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using System;
+using ShardingCore.Core.ShardingConfigurations;
 
 namespace Microsoft.Extensions.DependencyInjection
 {
@@ -19,7 +20,7 @@ namespace Microsoft.Extensions.DependencyInjection
             services.AddSingleton<IDataBaseModelBuilderOptions>( c=> new NpgsqlModelBuilderOptions());
             services.AddDbContextPool<ApplicationDbContext>(builder =>
             {
-                builder.UseNpgsql(connectionString, s =>  s.MigrationsAssembly("IoTSharp.Data.PostgreSQL"));
+                builder.UseNpgsql(connectionString, s =>  s.MigrationsAssembly("IoTSharp.Data.PostgreSQL").UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery));
                 builder.UseInternalServiceProvider(services.BuildServiceProvider());
             }
      , poolSize);
@@ -28,10 +29,16 @@ namespace Microsoft.Extensions.DependencyInjection
 
         }
 
-        public static void UseNpgsqlToSharding(this IShardingBuilder builder, string connectionString, ShardingByDateMode expandBy)
+        public static void UseNpgsqlToSharding(this ShardingConfigOptions options)
         {
-            builder.AddDataSource(connectionString, ReadWriteType.Read | ReadWriteType.Write, DatabaseType.PostgreSql);
-            builder.SetDateSharding<TelemetryData>(nameof(TelemetryData.DateTime),(ExpandByDateMode)(int)expandBy, DateTime.Now);
+            options.UseShardingQuery((conStr, builder) =>
+            {
+                builder.UseNpgsql(conStr);
+            });
+            options.UseShardingTransaction((conn, builder) =>
+            {
+                builder.UseNpgsql(conn);
+            });
         }
     }
 }

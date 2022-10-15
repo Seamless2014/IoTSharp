@@ -1,7 +1,7 @@
 ﻿using CoAP.Server;
-using DotNetCore.CAP;
+using IoTSharp.EventBus;
+using IoTSharp.Contracts;
 using IoTSharp.Data;
-using IoTSharp.Handlers;
 using IoTSharp.Services.CoApResources;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -22,11 +22,11 @@ namespace IoTSharp.Services
         private readonly ILogger _logger;
 
         private ApplicationDbContext _dbContext;
-        private readonly ICapPublisher _capBus;
+        private readonly IPublisher _capBus;
         private IServiceScope _serviceScope;
         private CoapServer server;
         private readonly AppSettings _settings;
-        public CoAPService(ILogger<CoAPService> logger, IServiceScopeFactory scopeFactor, IOptions<AppSettings> options, ICapPublisher capBus)
+        public CoAPService(ILogger<CoAPService> logger, IServiceScopeFactory scopeFactor, IOptions<AppSettings> options, IPublisher capBus)
         {
             _settings = options.Value;
             server = new CoapServer();
@@ -40,14 +40,14 @@ namespace IoTSharp.Services
 
         public Task StartAsync(CancellationToken cancellationToken)
         {
-            server.Start();
+           // server.Start();
             return Task.CompletedTask;
         }
 
         public Task StopAsync(CancellationToken cancellationToken)
         {
 
-            server.Stop();
+            //server.Stop();
             return Task.CompletedTask;
         }
     }

@@ -20,6 +20,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Options;
 
 using Jdenticon.AspNetCore;
+using IoTSharp.Contracts;
 
 namespace IoTSharp.Controllers
 {
@@ -310,7 +311,7 @@ namespace IoTSharp.Controllers
                 {
                     await _signInManager.SignInAsync(user, false);
                     await _signInManager.UserManager.AddClaimAsync(user, new Claim(ClaimTypes.Email, model.Email));
-                    var customer = await _context.Customer.Include(c => c.Tenant).FirstOrDefaultAsync(c => c.Email == model.Customer);
+                    var customer = await _context.Customer.Include(c => c.Tenant).AsSingleQuery().FirstOrDefaultAsync(c => c.Email == model.Customer);
                     if (customer != null)
                     {
                         await _signInManager.UserManager.AddClaimAsync(user, new Claim(ClaimTypes.Email, model.Email));

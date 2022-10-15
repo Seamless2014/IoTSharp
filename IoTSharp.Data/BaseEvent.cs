@@ -1,4 +1,5 @@
-﻿using System;
+﻿using IoTSharp.Contracts;
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -16,7 +17,7 @@ namespace IoTSharp.Data
         public string EventName { get; set; }
         public string EventDesc { get; set; }
         public int EventStaus { get; set; }
-        public EventType Type { get; set; }
+        public FlowRuleRunType Type { get; set; }
         public string MataData { get; set; }
         public Guid Creator { get; set; }
         public FlowRule FlowRule { get; set; }

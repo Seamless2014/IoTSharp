@@ -1,5 +1,5 @@
-﻿using DotNetCore.CAP;
-using Dynamitey.DynamicObjects;
+﻿using IoTSharp.EventBus;
+using IoTSharp.Contracts;
 using IoTSharp.Data;
 using IoTSharp.Dtos;
 using IoTSharp.Extensions;
@@ -24,7 +24,7 @@ namespace IoTSharp.Services.MQTTControllers
     public class V1GatewayController : GatewayController
     {
         public V1GatewayController(ILogger<GatewayController> logger, IServiceScopeFactory scopeFactor,
-         IOptions<AppSettings> options, ICapPublisher queue, RawDataGateway rawDataGateway
+         IOptions<AppSettings> options, IPublisher queue, RawDataGateway rawDataGateway
          ) : base(logger, scopeFactor, options, queue, rawDataGateway)
         {
         }
@@ -36,11 +36,11 @@ namespace IoTSharp.Services.MQTTControllers
     {
         private readonly ILogger _logger;
         private readonly IServiceScopeFactory _scopeFactor;
-        private readonly ICapPublisher _queue;
+        private readonly IPublisher _queue;
         private readonly RawDataGateway _rawData;
 
         public GatewayController(ILogger<GatewayController> logger, IServiceScopeFactory scopeFactor,
-            IOptions<AppSettings> options, ICapPublisher queue, RawDataGateway rawDataGateway
+            IOptions<AppSettings> options, IPublisher queue, RawDataGateway rawDataGateway
             )
         {
             _logger = logger;
@@ -50,58 +50,62 @@ namespace IoTSharp.Services.MQTTControllers
         }
 
         [MqttRoute("telemetry")]
-        public Task telemetry()
+        public async Task telemetry()
         {
             var _dev = GetSessionItem<Device>();
             var lst = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, List<GatewayPlayload>>>(Message.ConvertPayloadToString());
             _logger.LogInformation($"{ClientId}的数据{Message.Topic}是网关数据， 解析到{lst?.Count}个设备");
-            lst?.Keys.ToList().ForEach(dev =>
+          await  _queue.PublishActive(_dev.Id, ActivityStatus.Activity);
+          
+            lst?.Keys.ToList().ForEach(async dev =>
             {
                 var plst = lst[dev];
                 var device = _dev.JudgeOrCreateNewDevice(dev, _scopeFactor, _logger);
-                _queue.PublishSubDeviceOnline(_dev.Id, device);
+             await   _queue.PublishActive(device.Id, ActivityStatus.Activity);
                 _logger.LogInformation($"{ClientId}的网关数据正在处理设备{dev}， 设备ID为{_dev?.Id}");
                 plst.ForEach(p =>
                 {
-                    _queue.PublishTelemetryData(new PlayloadData() { DeviceId = device.Id, DeviceStatus = p.DeviceStatus, ts = new DateTime(p.Ticks), MsgBody = p.Values, DataSide = DataSide.ClientSide, DataCatalog = DataCatalog.TelemetryData });
+                    _queue.PublishTelemetryData(new PlayloadData() { DeviceId = device.Id,  ts = new DateTime(p.Ticks), MsgBody = p.Values, DataSide = DataSide.ClientSide, DataCatalog = DataCatalog.TelemetryData });
                 });
                 _logger.LogInformation($"{ClientId}的网关数据处理完成，设备{dev}ID为{device?.Id}共计{plst.Count}条");
             });
-            return Ok();
+          await   Ok();
         }
 
         [MqttRoute("attributes")]
-        public Task Attributes()
+        public async Task Attributes()
         {
             var _dev = GetSessionItem<Device>();
             var lst = Newtonsoft.Json.JsonConvert.DeserializeObject<Dictionary<string, List<GatewayPlayload>>>(Message.ConvertPayloadToString());
             _logger.LogInformation($"{ClientId}的数据{Message.Topic}是网关数据， 解析到{lst?.Count}个设备");
-            lst?.Keys.ToList().ForEach(dev =>
+            await _queue.PublishActive(_dev.Id, ActivityStatus.Activity);
+            lst?.Keys.ToList().ForEach(async dev =>
             {
                 var plst = lst[dev];
                 var device = _dev.JudgeOrCreateNewDevice(dev, _scopeFactor, _logger);
-                _queue.PublishSubDeviceOnline(_dev.Id, device);
+                await _queue.PublishActive(device.Id, ActivityStatus.Activity);
                 _logger.LogInformation($"{ClientId}的网关数据正在处理设备{dev}， 设备ID为{device?.Id}");
-                plst.ForEach(p =>
+                plst.ForEach(async p =>
                 {
-                    _queue.PublishAttributeData(new PlayloadData() { DeviceId = device.Id, DeviceStatus = p.DeviceStatus, ts = new DateTime(p.Ticks), MsgBody = p.Values, DataSide = DataSide.ClientSide, DataCatalog = DataCatalog.TelemetryData });
+                    await _queue.PublishAttributeData(new PlayloadData() { DeviceId = device.Id,   ts = new DateTime(p.Ticks), MsgBody = p.Values, DataSide = DataSide.ClientSide, DataCatalog = DataCatalog.TelemetryData });
                 });
                 _logger.LogInformation($"{ClientId}的网关数据处理完成，设备{dev}ID为{device?.Id}共计{plst.Count}条");
             });
-            return Ok();
+            await Ok();
         }
 
         [MqttRoute("connect")]
-        public Task on_connect()
+        public async Task on_connect()
         {
             var _dev = GetSessionItem<Device>();
             var ds = Newtonsoft.Json.JsonConvert.DeserializeObject<GatewayDeviceStatus>(Message.ConvertPayloadToString());
+            await _queue.PublishActive(_dev.Id, ActivityStatus.Activity);
             if (ds != null)
             {
                 var device = _dev.JudgeOrCreateNewDevice(ds.Device, _scopeFactor, _logger);
                 if (device != null)
                 {
-                    _queue.PublishDeviceStatus(device.Id, DeviceStatus.Good);
+                    await _queue.PublishConnect(device.Id, ConnectStatus.Connected);
                 }
                 else
                 {
@@ -112,20 +116,21 @@ namespace IoTSharp.Services.MQTTControllers
             {
                 _logger.LogWarning("无法获取网关的子设备。");
             }
-            return Ok();
+             await Ok();
         }
 
         [MqttRoute("disconnect")]
-        public Task Disconnect()
+        public async Task Disconnect()
         {
             var _dev = GetSessionItem<Device>();
             var ds = Newtonsoft.Json.JsonConvert.DeserializeObject<GatewayDeviceStatus>(Message.ConvertPayloadToString());
+            await _queue.PublishActive(_dev.Id, ActivityStatus.Activity);
             if (ds != null)
             {
                 var device = _dev.JudgeOrCreateNewDevice(ds.Device, _scopeFactor, _logger);
                 if (device != null)
                 {
-                    _queue.PublishDeviceStatus(device.Id, DeviceStatus.Bad);
+                    await _queue.PublishConnect(device.Id, ConnectStatus.Disconnected);
                 }
                 else
                 {
@@ -136,7 +141,7 @@ namespace IoTSharp.Services.MQTTControllers
             {
                 _logger.LogWarning("无法获取网关的子设备。");
             }
-            return Ok();
+            await Ok();
         }
 
         [MqttRoute("xml")]
@@ -145,6 +150,7 @@ namespace IoTSharp.Services.MQTTControllers
             try
             {
                 var _dev = GetSessionItem<Device>();
+                await _queue.PublishActive(_dev.Id, ActivityStatus.Activity);
                 var result = await _rawData.ExecuteAsync(_dev, "xml", Message.ConvertPayloadToString());
                 _logger.LogInformation($"调用XML网关处理语句返回:{result.Code}-{result.Msg}");
             }
@@ -152,6 +158,7 @@ namespace IoTSharp.Services.MQTTControllers
             {
                 _logger.LogError(ex, $"调用XML网关失败:{ex.Message}");
             }
+            await Ok();
         }
 
         [MqttRoute("json")]
@@ -160,6 +167,7 @@ namespace IoTSharp.Services.MQTTControllers
             try
             {
                 var _dev = GetSessionItem<Device>();
+               await _queue.PublishActive(_dev.Id, ActivityStatus.Activity);
                 var result = await _rawData.ExecuteAsync(_dev, "json", Message.ConvertPayloadToString());
                 _logger.LogInformation($"调用Json网关处理语句返回:{result.Code}-{result.Msg}");
             }
@@ -167,6 +175,7 @@ namespace IoTSharp.Services.MQTTControllers
             {
                 _logger.LogError(ex, $"调用Json网关失败:{ex.Message}");
             }
+            await Ok();
         }
     }
 }

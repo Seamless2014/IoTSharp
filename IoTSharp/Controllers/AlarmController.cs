@@ -1,10 +1,9 @@
 ﻿using IoTSharp.Contracts;
 using IoTSharp.Controllers.Models;
 using IoTSharp.Data;
-using IoTSharp.Dtos;
+using IoTSharp.Data.Extensions;
 using IoTSharp.Extensions;
 using IoTSharp.Models;
-using LinqKit;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -12,6 +11,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using System.Threading.Tasks;
+using ShardingCore.Extensions;
 
 namespace IoTSharp.Controllers
 {
@@ -82,7 +82,7 @@ namespace IoTSharp.Controllers
             var profile = this.GetUserProfile();
 
             Expression<Func<Alarm, bool>> condition = x =>
-                x.Customer.Id == profile.Comstomer && x.Tenant.Id == profile.Tenant;
+                x.Customer.Id == profile.Customer && x.Tenant.Id == profile.Tenant;
 
             if (m.AckDateTime != null && m.AckDateTime.Length == 2)
             {
@@ -198,19 +198,19 @@ namespace IoTSharp.Controllers
                 case OriginatorType.Device:
                     return new ApiResult<List<ModelOriginatorItem>>(ApiCode.Success, "OK", await _context.Device
                         .Where(c => c.Name.Contains(m.OriginatorName) && c.DeviceType == DeviceType.Device &&
-                                    c.Customer.Id == profile.Comstomer && c.Tenant.Id == profile.Tenant)
+                                    c.Customer.Id == profile.Customer && c.Tenant.Id == profile.Tenant)
                         .Select(c => new ModelOriginatorItem { Id = c.Id, Name = c.Name }).ToListAsync());
 
                 case OriginatorType.Gateway:
                     return new ApiResult<List<ModelOriginatorItem>>(ApiCode.Success, "OK", await _context.Device
                         .Where(c => c.Name.Contains(m.OriginatorName) && c.DeviceType == DeviceType.Gateway &&
-                                    c.Customer.Id == profile.Comstomer && c.Tenant.Id == profile.Tenant)
+                                    c.Customer.Id == profile.Customer && c.Tenant.Id == profile.Tenant)
                         .Select(c => new ModelOriginatorItem { Id = c.Id, Name = c.Name }).ToListAsync());
                     ;
                 case OriginatorType.Asset:
                     return new ApiResult<List<ModelOriginatorItem>>(ApiCode.Success, "OK",
                         await _context.Assets
-                            .Where(c => c.Name.Contains(m.OriginatorName) && c.Customer.Id == profile.Comstomer &&
+                            .Where(c => c.Name.Contains(m.OriginatorName) && c.Customer.Id == profile.Customer &&
                                         c.Tenant.Id == profile.Tenant).Select(c => new ModelOriginatorItem
                                         { Id = c.Id, Name = c.Name }).ToListAsync());
             }

@@ -1,24 +1,22 @@
 ﻿using System.Security.Authentication;
 using System.Security.Cryptography.X509Certificates;
 
-namespace IoTSharp
+namespace IoTSharp.Contracts
 {
     public class MqttBrokerSetting
     {
         public int Port { get; set; } = 1883;
         public int TlsPort { get; set; } = 8883;
         public bool EnableTls { get; set; } = false;
-        public string Certificate { get; set; }
-        public SslProtocols SslProtocol { get; set; } = SslProtocols.None;
+        public SslProtocols SslProtocol { get; set; } = SslProtocols.Tls12;
         public bool PersistRetainedMessages { get; set; }
-
 
         X509Certificate2 _CACertificate;
         public X509Certificate2 CACertificate
         {
             get
             {
-                if (_CACertificate == null)
+                if (_CACertificate == null && EnableTls)
                 {
                     if (System.IO.File.Exists(CACertificateFile) && System.IO.File.Exists(CAPrivateKeyFile))
                     {
@@ -36,7 +34,7 @@ namespace IoTSharp
         {
             get
             {
-                if (_BrokerCertificate == null)
+                if (_BrokerCertificate == null && EnableTls)
                 {
                     if (System.IO.File.Exists(CertificateFile) && System.IO.File.Exists(PrivateKeyFile))
                     {
@@ -50,7 +48,6 @@ namespace IoTSharp
         public string CAPrivateKeyFile { get; set; } = "ca.key";
         public string CertificateFile { get; set; } = "server.crt";
         public string PrivateKeyFile { get; set; } = "server.key";
-        public string ServerIPAddress { get; set; }
-        public string DomainName { get; set; }
+        public string DomainName { get; set; } = "http://localhost/";
     }
 }

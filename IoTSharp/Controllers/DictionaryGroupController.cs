@@ -12,10 +12,11 @@ using IoTSharp.Dtos;
 using IoTSharp.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Authorization;
+using IoTSharp.Contracts;
 
 namespace IoTSharp.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/[controller]/[action]")]
     [ApiController]
     [Authorize]
     public class DictionaryGroupController : ControllerBase
@@ -31,7 +32,7 @@ namespace IoTSharp.Controllers
         }
 
 
-        [HttpPost("[action]")]
+        [HttpPost]
         public ApiResult<PagedData<BaseDictionaryGroup>> Index([FromBody] IPageParam m)
         {
 
@@ -46,7 +47,7 @@ namespace IoTSharp.Controllers
             });
         }
 
-        [HttpGet("[action]")]
+        [HttpGet]
         public ApiResult<BaseDictionaryGroup> Get(int id)
         {
             var dictionaryGroup = _context.BaseDictionaryGroups.FirstOrDefault(c => c.DictionaryGroupId == id);
@@ -60,7 +61,7 @@ namespace IoTSharp.Controllers
         }
 
 
-        [HttpGet("[action]")]
+        [HttpGet]
         public ApiResult<bool> SetStatus(int id)
         {
             var obj = _context.BaseDictionaryGroups.FirstOrDefault(c => c.DictionaryGroupId == id);
@@ -85,7 +86,7 @@ namespace IoTSharp.Controllers
         /// </summary>
         /// <param name="m"></param>
         /// <returns></returns>
-        [HttpPost("[action]")]
+        [HttpPost]
         public ApiResult<bool> Save(BaseDictionaryGroup m)
         {
             var dictionaryGroup = new BaseDictionaryGroup()
@@ -104,7 +105,7 @@ namespace IoTSharp.Controllers
             _context.SaveChanges();
             return new ApiResult<bool>(ApiCode.Success, "OK", true);
         }
-        [HttpPost("[action]")]
+        [HttpPost]
         public ApiResult<bool> Update(BaseDictionaryGroup m)
         {
             var dictionaryGroup = _context.BaseDictionaryGroups.FirstOrDefault(c => c.DictionaryGroupId == m.DictionaryGroupId);
@@ -132,7 +133,7 @@ namespace IoTSharp.Controllers
         /// </summary>
         /// <param name="id"></param>
         /// <returns></returns>
-        [HttpGet("[action]")]
+        [HttpGet]
         public ApiResult<bool> Delete(int id)
         {
             var dictionaryGroup = _context.BaseDictionaryGroups.FirstOrDefault(c => c.DictionaryGroupId == id);

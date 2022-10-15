@@ -49,34 +49,26 @@ e
     this.http
       .get(
         'api/Devices/' + this.record.id + '/DownloadCertificates',
-        // {},
-        // {
-        //   responseType: 'blob'
-        // }
+        {},{ responseType:'blob'}
       )
       .subscribe(
         {
           next: next => {
+            let url = window.URL.createObjectURL(next);
+            let a = document.createElement('a');
+            document.body.appendChild(a);
+            a.setAttribute('style', 'display: none');
+            a.href = url;
+            a.download = this.record.id + '.zip';
+            a.click();
+            window.URL.revokeObjectURL(url);
+            a.remove();
 
-            if(next.code===10000){
-              let url = window.URL.createObjectURL(next);
-              let a = document.createElement('a');
-              document.body.appendChild(a);
-              a.setAttribute('style', 'display: none');
-              a.href = url;
-              a.download = this.record.id + '.zip';
-              a.click();
-              window.URL.revokeObjectURL(url);
-              a.remove();
-            }else{
-
-              this.msg.create('error', '证书下载失败:'+next.msg);
-            }
-        
           },
           error: error => {
-   
-            this.msg.create('error', '证书下载失败:'+error.error);
+
+            this.msg.create('error', '证书下载失败:' + error.error);
+            console.log(error);
           }, complete: () => { }
         }
       );

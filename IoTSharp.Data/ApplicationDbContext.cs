@@ -7,13 +7,14 @@ using System.Linq;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.Extensions.DependencyInjection;
 using IoTSharp.Data.Configurations;
+using IoTSharp.Contracts;
+using ShardingCore.Core.VirtualRoutes.TableRoutes.RouteTails.Abstractions;
+using ShardingCore.Sharding.Abstractions;
 
 namespace IoTSharp.Data
 {
     public class ApplicationDbContext : IdentityDbContext
     {
-
-
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
         {
@@ -44,9 +45,6 @@ namespace IoTSharp.Data
             modelBuilder.ApplyConfiguration(new TelemetryDataConfiguration());
             base.OnModelCreating(modelBuilder);
         }
-
-
-
 
         public DbSet<Tenant> Tenant { get; set; }
         public DbSet<Customer> Customer { get; set; }
@@ -99,6 +97,8 @@ namespace IoTSharp.Data
         public DbSet<Produce>  Produces { get; set; }
 
         public DbSet<ProduceData>  ProduceDatas { get; set; }
+
+        public DbSet<ProduceDictionary> ProduceDictionaries { get; set; }
     }
 
 }

@@ -9,13 +9,6 @@
             https://github.com/chkr1011/MQTTnet/blob/master/Source/MQTTnet.Extensions.Rpc/MqttRpcClient.cs
             </summary>
         </member>
-        <member name="M:IoTSharp.Extensions.DeviceExtension.AfterCreateDevice(IoTSharp.Data.ApplicationDbContext,IoTSharp.Data.Device)">
-            <summary>
-            When creating a device, all the things that need to be done here are done
-            </summary>
-            <param name="_context"></param>
-            <param name="device"></param>
-        </member>
         <member name="T:IoTSharp.Controllers.AccountController">
             <summary>
             用户管理
@@ -275,6 +268,12 @@
              <param name="deviceId"></param>
              <returns></returns>
         </member>
+        <member name="M:IoTSharp.Controllers.DevicesController.GetAttributeLatestByKeyNameAndDeviceId(IoTSharp.Dtos.AttributeLatestByKeyNameAndDeviceIdDto)">
+             <summary>
+            获取指定Key和设备Id列表的最新属性
+             </summary>
+             <returns></returns>
+        </member>
         <member name="M:IoTSharp.Controllers.DevicesController.GetAttributeLatest(System.Guid,System.String)">
             <summary>
             获取指定设备指定keys的最新属性
@@ -379,7 +378,7 @@
             <param name="telemetrys"></param>
             <returns></returns>
         </member>
-        <member name="M:IoTSharp.Controllers.DevicesController.Attributes(System.String,IoTSharp.Data.DataSide,System.String)">
+        <member name="M:IoTSharp.Controllers.DevicesController.Attributes(System.String,IoTSharp.Contracts.DataSide,System.String)">
              <summary>
              获取服务测的设备熟悉
              </summary>
@@ -437,7 +436,7 @@
             <param name="attributes"></param>
             <returns></returns>
         </member>
-        <member name="M:IoTSharp.Controllers.DevicesController.RemoveAttribute(System.Guid,System.String,IoTSharp.Data.DataSide)">
+        <member name="M:IoTSharp.Controllers.DevicesController.RemoveAttribute(System.Guid,System.String,IoTSharp.Contracts.DataSide)">
             <summary>
             属性删除
             </summary>
@@ -486,6 +485,7 @@
              <param name="m"></param>
              <returns></returns>
         </member>
+        <!-- Badly formed XML comment ignored for member "M:IoTSharp.Controllers.HealthChecksController.Get" -->
         <member name="T:IoTSharp.Controllers.InstallerController">
             <summary>
             安装
@@ -497,7 +497,7 @@
             </summary>
             <returns></returns>
         </member>
-        <member name="M:IoTSharp.Controllers.InstallerController.CreateRootCertificate(IoTSharp.Dtos.CreateRootCertificateDto)">
+        <member name="M:IoTSharp.Controllers.InstallerController.CreateRootCertificate">
             <summary>
             域名可以不配置， 默认会使用机器名  
             </summary>
@@ -507,6 +507,82 @@
             <summary>
             this is test purpose
             </summary>
+        </member>
+        <member name="M:IoTSharp.Controllers.MetricsController.EventBus">
+            <summary>
+            返回事件总线的统计信息
+            </summary>
+            <returns></returns>
+        </member>
+        <member name="M:IoTSharp.Controllers.ProducesController.List(IoTSharp.Controllers.Models.ProduceParam)">
+            <summary>
+            产品列表
+            </summary>
+            <param name="m"></param>
+            <returns></returns>
+        </member>
+        <member name="M:IoTSharp.Controllers.ProducesController.ProduceDatas(System.Guid)">
+            <summary>
+            
+            </summary>
+            <param name="produceid"></param>
+            <returns></returns>
+        </member>
+        <member name="M:IoTSharp.Controllers.ProducesController.Get(System.Guid)">
+            <summary>
+            获取产品
+            </summary>
+            <param name="id"></param>
+            <returns></returns>
+        </member>
+        <member name="M:IoTSharp.Controllers.ProducesController.Delete(System.Guid)">
+            <summary>
+            删除产品
+            </summary>
+            <param name="produceid"></param>
+            <returns></returns>
+        </member>
+        <member name="M:IoTSharp.Controllers.ProducesController.Save(IoTSharp.Dtos.ProduceAddDto)">
+            <summary>
+            新增产品
+            </summary>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:IoTSharp.Controllers.ProducesController.Update(IoTSharp.Dtos.ProduceAddDto)">
+            <summary>
+            修改产品
+            </summary>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:IoTSharp.Controllers.ProducesController.GetProduceData(System.Guid)">
+            <summary>
+            获取产品属性
+            </summary>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:IoTSharp.Controllers.ProducesController.EditProduceData(IoTSharp.Dtos.ProduceDataEditDto)">
+            <summary>
+            修改属性
+            </summary>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:IoTSharp.Controllers.ProducesController.GetProduceDictionary(System.Guid)">
+            <summary>
+            获取产品字典
+            </summary>
+            <param name="dto"></param>
+            <returns></returns>
+        </member>
+        <member name="M:IoTSharp.Controllers.ProducesController.EditProduceDictionary(IoTSharp.Dtos.ProduceDictionaryEditDto)">
+            <summary>
+            修改字典
+            </summary>
+            <param name="dto"></param>
+            <returns></returns>
         </member>
         <member name="M:IoTSharp.Controllers.RulesController.UpdateFlowExpression(IoTSharp.Dtos.UpdateFlowExpression)">
              <summary>
@@ -649,16 +725,6 @@
             设备类型
             </summary>
         </member>
-        <member name="P:IoTSharp.Dtos.DeviceDetailDto.Online">
-            <summary>
-            在线
-            </summary>
-        </member>
-        <member name="P:IoTSharp.Dtos.DeviceDetailDto.LastActive">
-            <summary>
-            最后一次活跃时间
-            </summary>
-        </member>
         <member name="P:IoTSharp.Dtos.DeviceDetailDto.Timeout">
             <summary>
             超时时间 秒数 
@@ -669,14 +735,14 @@
             所有者
             </summary>
         </member>
-        <member name="P:IoTSharp.Dtos.DeviceDetailDto.Tenant">
+        <member name="P:IoTSharp.Dtos.DeviceDetailDto.Active">
             <summary>
-            租户
+            是否活动
             </summary>
         </member>
-        <member name="P:IoTSharp.Dtos.DeviceDetailDto.Customer">
+        <member name="P:IoTSharp.Dtos.DeviceDetailDto.LastActivityDateTime">
             <summary>
-            客户
+            最后活动
             </summary>
         </member>
         <member name="P:IoTSharp.Dtos.DeviceRuleDto.Name">
@@ -687,16 +753,6 @@
         <member name="P:IoTSharp.Dtos.DeviceRuleDto.DeviceType">
             <summary>
             设备类型
-            </summary>
-        </member>
-        <member name="P:IoTSharp.Dtos.DeviceRuleDto.Online">
-            <summary>
-            在线
-            </summary>
-        </member>
-        <member name="P:IoTSharp.Dtos.DeviceRuleDto.LastActive">
-            <summary>
-            最后一次活跃时间
             </summary>
         </member>
         <member name="P:IoTSharp.Dtos.DeviceRuleDto.Timeout">
@@ -752,6 +808,117 @@
         <member name="P:IoTSharp.Dtos.InstanceDto.Installed">
             <summary>
             是否被安装
+            </summary>
+        </member>
+        <member name="P:IoTSharp.Dtos.InstanceDto.Domain">
+            <summary>
+            http://localhost/  
+            </summary>
+        </member>
+        <member name="P:IoTSharp.Dtos.ProduceAddDto.Name">
+            <summary>
+            设备名称
+            </summary>
+        </member>
+        <member name="P:IoTSharp.Dtos.ProduceAddDto.Icon">
+            <summary>
+            ICON file full path 
+            </summary>
+        </member>
+        <member name="P:IoTSharp.Dtos.ProduceAddDto.GatewayType">
+            <summary>
+            网关类型  根据不通网关来处理相关配置
+            </summary>
+        </member>
+        <member name="P:IoTSharp.Dtos.ProduceAddDto.GatewayConfiguration">
+            <summary>
+            网关配置信息， 如果是Unknow 则不使用， 如果是自定义 ，则这里是json字符串。 
+            如果是其他对应的网关， 则这里是 对应的配置文件名。 
+            </summary>
+        </member>
+        <member name="P:IoTSharp.Dtos.ProduceAddDto.DefaultTimeout">
+            <summary>
+            超时时间 秒数
+            </summary>
+        </member>
+        <member name="P:IoTSharp.Dtos.ProduceAddDto.Tenant">
+            <summary>
+            租户
+            </summary>
+        </member>
+        <member name="P:IoTSharp.Dtos.ProduceAddDto.Customer">
+            <summary>
+            客户
+            </summary>
+        </member>
+        <member name="P:IoTSharp.Dtos.ProduceAddDto.DefaultIdentityType">
+            <summary>
+            默认认证类型
+            </summary>
+        </member>
+        <member name="P:IoTSharp.Dtos.ProduceAddDto.Description">
+            <summary>
+            描述
+            </summary>
+        </member>
+        <member name="P:IoTSharp.Dtos.ProduceAddDto.DefaultDeviceType">
+            <summary>
+            默认设备类型
+            </summary>
+        </member>
+        <member name="P:IoTSharp.Dtos.ProduceDictionaryItemDto.KeyName">
+            <summary>
+            字段名称
+            </summary>
+        </member>
+        <member name="P:IoTSharp.Dtos.ProduceDictionaryItemDto.DisplayName">
+            <summary>
+            字段显示名称
+            </summary>
+        </member>
+        <member name="P:IoTSharp.Dtos.ProduceDictionaryItemDto.Unit">
+            <summary>
+            单位
+            </summary>
+        </member>
+        <member name="P:IoTSharp.Dtos.ProduceDictionaryItemDto.UnitExpression">
+            <summary>
+            单位转换表达式
+            </summary>
+        </member>
+        <member name="P:IoTSharp.Dtos.ProduceDictionaryItemDto.UnitConvert">
+            <summary>
+            
+            </summary>
+        </member>
+        <member name="P:IoTSharp.Dtos.ProduceDictionaryItemDto.KeyDesc">
+            <summary>
+            字段备注
+            </summary>
+        </member>
+        <member name="P:IoTSharp.Dtos.ProduceDictionaryItemDto.DefaultValue">
+            <summary>
+            默认值
+            </summary>
+        </member>
+        <member name="P:IoTSharp.Dtos.ProduceDictionaryItemDto.Display">
+            <summary>
+            是否显示
+            </summary>
+        </member>
+        <member name="P:IoTSharp.Dtos.ProduceDictionaryItemDto.Place0">
+            <summary>
+            位置名称
+            </summary>
+        </member>
+        <member name="P:IoTSharp.Dtos.ProduceDictionaryItemDto.PlaceOrder0">
+            <summary>
+            此位置顺序
+            </summary>
+        </member>
+        <member name="P:IoTSharp.Dtos.ProduceDictionaryItemDto.DataType">
+            <summary>
+            数据类型 
             </summary>
         </member>
         <member name="T:IoTSharp.Dtos.TelemetryDataQueryDto">
@@ -896,7 +1063,7 @@
             <param name="_logger"></param>
             <returns></returns>
         </member>
-        <member name="M:IoTSharp.FlowRuleEngine.FlowRuleProcessor.RunFlowRules(System.Guid,System.Object,System.Guid,IoTSharp.Data.EventType,System.String)">
+        <member name="M:IoTSharp.FlowRuleEngine.FlowRuleProcessor.RunFlowRules(System.Guid,System.Object,System.Guid,IoTSharp.Contracts.FlowRuleRunType,System.String)">
              <summary>
             
              </summary>

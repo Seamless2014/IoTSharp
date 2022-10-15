@@ -73,6 +73,7 @@ export class DevicelistComponent implements OnInit, OnDestroy {
     pi: number;
     ps: number;
     sorter: string;
+    onlyActive:boolean;
     customerId: string;
     name: string;
     // anothor query field:The type you expect
@@ -80,6 +81,7 @@ export class DevicelistComponent implements OnInit, OnDestroy {
       pi: 0,
       ps: 20,
       sorter: '',
+      onlyActive:false,
       customerId: '',
       name: ''
     };
@@ -101,8 +103,8 @@ export class DevicelistComponent implements OnInit, OnDestroy {
     { label: 'id', value: 'id', checked: false },
     { label: '设备名称', value: 'name', checked: true },
     { label: '设备类型', value: 'deviceType', checked: true },
-    { label: '在线状态', value: 'online', checked: true },
-    { label: '最后活动时间', value: 'lastActive', checked: true },
+    { label: '在线状态', value: 'active', checked: true },
+    { label: '最后活动时间', value: 'lastActivityDateTime', checked: true },
     { label: '认证方式', value: 'identityType', checked: true }
   ];
   columns: STColumn[] = [
@@ -119,8 +121,8 @@ export class DevicelistComponent implements OnInit, OnDestroy {
       }
     },
     { title: '设备类型', index: 'deviceType', type: 'tag', tag: this.DeviceTAG, iif: () => this.isChoose('deviceType') },
-    { title: '在线状态', index: 'online', type: 'badge', badge: this.BADGE, iif: () => this.isChoose('online'), sort: true },
-    { title: '最后活动时间', index: 'lastActive', type: 'date', iif: () => this.isChoose('lastActive'), sort: true },
+    { title: '在线状态', index: 'active', type: 'badge', badge: this.BADGE, iif: () => this.isChoose('active'), sort: true },
+    { title: '最后活动时间', index: 'lastActivityDateTime', type: 'date', iif: () => this.isChoose('lastActivityDateTime'), sort: true },
     { title: '认证方式', index: 'identityType', type: 'tag', tag: this.TAG, iif: () => this.isChoose('identityType') },
     {
       title: '操作',
@@ -180,10 +182,10 @@ export class DevicelistComponent implements OnInit, OnDestroy {
           iif: record => record.identityType === 'X509Certificate',
           modal: {
             component: DevicecertdialogComponent
-          },    click: () => { }
-         // click: record => {
-         //   this.download(record);
-        //  }
+          }, click: () => { }
+          // click: record => {
+          //   this.download(record);
+          //  }
         },
         {
           acl: 110,
@@ -218,8 +220,8 @@ export class DevicelistComponent implements OnInit, OnDestroy {
 
         next: x => {
           if (!x['id']) {
-            this.q.customerId = this.settingService.user['comstomer'];
-            this.customerId = this.settingService.user['comstomer'];
+            this.q.customerId = this.settingService.user['customer'];
+            this.customerId = this.settingService.user['customer'];
             this.url = 'api/Devices/Customers';
           } else {
             this.q.customerId = x['id'] as unknown as string;
@@ -231,7 +233,7 @@ export class DevicelistComponent implements OnInit, OnDestroy {
         complete: () => { }
       }
     );
-
+    this.getOnlineStatus()
     // this.obsdevice = interval(6000).subscribe(async () => {
     //   this.refreshData();
     // });
@@ -299,8 +301,11 @@ export class DevicelistComponent implements OnInit, OnDestroy {
     drawerRef.afterClose.subscribe(() => {
       this.getData();
     });
+
+
   }
   edit(id: string): void {
+    this.getOnlineStatus()
     var { nzMaskClosable, width } = this.settingService.getData('drawerconfig');
     let title = id == '-1' ? '新建设备' : '修改设备';
     const drawerRef = this.drawerService.create<
@@ -411,6 +416,37 @@ export class DevicelistComponent implements OnInit, OnDestroy {
     this.st.load(this.st.pi);
   }
 
+
+
+  getOnlineStatus() {
+    if (this.st.list.length > 0) {
+      this.http
+        .post<appmessage<any>>('api/Devices/AttributeLatestByKeyNameAndDeviceId', {
+          deviceIds: this.st.list.map(c => c['id']) ,
+          keyNames: ['Active','LastActivityDateTime'],
+
+        })
+        .subscribe({
+          next: next => {
+
+            for (var item of next.data) {
+              var data = this.st.list.findIndex(c => c['id'] == item['deviceId']);
+
+              if(item['keyName']==='Active'){
+                this.st.setRow(data, { online: item.value });
+              }
+              if(item['keyName']==='LastActivityDateTime'){
+                this.st.setRow(data, { lastActive: item.value });
+              }
+            }
+    
+          }, error: error => { }, complete: () => { }
+
+        });
+
+    }
+
+  }
   refreshData() {
     this.http
       .get<appmessage<any>>(this.url, {
@@ -432,11 +468,16 @@ export class DevicelistComponent implements OnInit, OnDestroy {
       });
   }
 
+
+
+
   onchange($events: STChange): void {
     if (this.obs) {
       this.obs.unsubscribe();
       this.obs = null;
     }
+
+    console.log($events.type)
     switch ($events.type) {
       case 'expand':
         if ($events.expand.expand) {
@@ -464,7 +505,13 @@ export class DevicelistComponent implements OnInit, OnDestroy {
             this.obs.unsubscribe();
           }
         }
+    
 
+        break;
+
+
+        case 'loaded':
+//this.getOnlineStatus();
         break;
     }
   }
