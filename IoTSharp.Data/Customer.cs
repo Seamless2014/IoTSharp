@@ -20,11 +20,15 @@ namespace IoTSharp.Data
         public string Street { get; set; }
         public string Address { get; set; }
         public int ZipCode { get; set; }
+
         [System.Text.Json.Serialization.JsonIgnore]
         [Newtonsoft.Json.JsonIgnore]
         public Tenant Tenant { get; set; }
+
         [System.Text.Json.Serialization.JsonIgnore]
         [Newtonsoft.Json.JsonIgnore]
         public List<Device> Devices { get; set; }
+
+        public bool Deleted { get; set; }
     }
 }

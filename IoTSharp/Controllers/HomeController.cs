@@ -1,12 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+ 
 using IoTSharp.Data;
 using IoTSharp.Dtos;
 using Microsoft.AspNetCore.Authorization;
 using IoTSharp.Contracts;
+using EasyCaching.Core;
+using Microsoft.Extensions.Options;
+using IoTSharp.Extensions;
 
 namespace IoTSharp.Controllers
 {
@@ -15,31 +16,22 @@ namespace IoTSharp.Controllers
     [ApiController]
     public class HomeController :  ControllerBase
     {
+        private readonly IEasyCachingProvider _caching;
+        private readonly AppSettings _setting;
         private ApplicationDbContext _context;
-        public HomeController(ApplicationDbContext context)
+        public HomeController(ApplicationDbContext context,IEasyCachingProviderFactory factory,IOptions<AppSettings> options)
         {
             _context = context;
+            string _hc_Caching = $"{nameof(CachingUseIn)}-{Enum.GetName(options.Value.CachingUseIn)}";
+            _caching = factory.GetCachingProvider(_hc_Caching);
+            _setting = options.Value;
         }
         [HttpGet]
         public  ApiResult<HomeKanbanDto> KanBan()
         {
-            HomeKanbanDto m = new HomeKanbanDto();
-            m.DeviceCount= _context.Device.Count(c => !c.Deleted);
-            m.EventCount = _context.BaseEvents.Count(c => c.EventStaus > -1);
-            m.OnlineDeviceCount = -1;
-            m.TelemetryDataCount = _context.TelemetryData.Count(c=>c.DateTime>DateTime.Today);
-            return new ApiResult<HomeKanbanDto>(ApiCode.Success, "OK", m);
-        }
-
-        [HttpGet]
-        public ApiResult<List<Device>> TopTenDevice()
-        {
-            return new ApiResult<List<Device>>(ApiCode.Success, "OK", _context.Device.Skip(0).Take(10).ToList());
-        }
-        [HttpGet]
-        public ApiResult<List<BaseEvent>> TopTenEvents()
-        {
-            return new ApiResult<List<BaseEvent>>(ApiCode.Success, "OK", _context.BaseEvents.OrderByDescending(c => c.CreaterDateTime).Skip(0).Take(10).ToList());
+            var profile = this.GetUserProfile();
+            var  data = _caching.GetKanBanCache(profile.Tenant, _context);
+            return new ApiResult<HomeKanbanDto>(ApiCode.Success, "OK", data);
         }
 
     }

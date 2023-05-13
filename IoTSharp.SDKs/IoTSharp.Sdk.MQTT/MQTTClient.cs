@@ -94,7 +94,7 @@ namespace IoTSharp.EdgeSdk.MQTT
                             chain.ChainPolicy.RevocationMode = X509RevocationMode.NoCheck;
                             chain.ChainPolicy.RevocationFlag = X509RevocationFlag.ExcludeRoot;
                             chain.ChainPolicy.VerificationFlags = X509VerificationFlags.NoFlag;
-                            chain.ChainPolicy.VerificationTime = DateTime.Now;
+                            chain.ChainPolicy.VerificationTime = DateTime.UtcNow;
                             chain.ChainPolicy.UrlRetrievalTimeout = new TimeSpan(0, 0, 0);
                             chain.ChainPolicy.CustomTrustStore.Add(ca);
                             chain.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
@@ -262,18 +262,14 @@ namespace IoTSharp.EdgeSdk.MQTT
             string topic = $"devices/{rpcResult.DeviceId}/rpc/response/{rpcResult.Method.ToString()}/{rpcResult.ResponseId}";
             return Client.PublishAsync(new MqttApplicationMessageBuilder().WithTopic( topic).WithPayload( rpcResult.Data.ToString()).WithQualityOfServiceLevel( MqttQualityOfServiceLevel.ExactlyOnce).Build());
         }
-        public Task RequestAttributes(params string[] args) => RequestAttributes("me", false, args);
-        public Task RequestAttributes(string _device, params string[] args) => RequestAttributes(_device, false, args);
-        public Task RequestAttributes(bool anySide = true, params string[] args) => RequestAttributes("me", true, args);
+        public Task RequestAttributes(params string[] args) => RequestAttributes("me", args);
 
-        public Task RequestAttributes(string _device, bool anySide  , params string[] args)
+        public Task RequestAttributes(string _device, params string[] args)
         {
             string id = Guid.NewGuid().ToString();
             string topic = $"devices/{_device}/attributes/request/{id}";
-            Dictionary<string, string> keys = new Dictionary<string, string>();
-            keys.Add(anySide ? "anySide" : "server", string.Join(",", args));
             Client.SubscribeAsync($"devices/{_device}/attributes/response/{id}", MqttQualityOfServiceLevel.ExactlyOnce);
-            return Client.PublishStringAsync(topic, Newtonsoft.Json.JsonConvert.SerializeObject(keys), MqttQualityOfServiceLevel.ExactlyOnce);
+            return Client.PublishStringAsync(topic, Newtonsoft.Json.JsonConvert.SerializeObject(args), MqttQualityOfServiceLevel.ExactlyOnce);
         }
     }
     public class RpcRequest

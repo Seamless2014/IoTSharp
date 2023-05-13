@@ -11,7 +11,7 @@ namespace IoTSharp.Data
         [Key]
         public Guid Id { get; set; } = Guid.NewGuid();
         public string Name { get; set; }
-        public string EMail { get; set; }
+        public string Email { get; set; }
         public string Phone { get; set; }
         public string Country { get; set; }
         public string Province { get; set; }
@@ -26,6 +26,6 @@ namespace IoTSharp.Data
         [Newtonsoft.Json.JsonIgnore]
         public List<Device> Devices { get; set; }
 
-
+        public bool Deleted { get; set; }
     }
 }

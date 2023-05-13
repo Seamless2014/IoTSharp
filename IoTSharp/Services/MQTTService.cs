@@ -13,6 +13,7 @@ using MQTTnet.Server;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
 
 namespace IoTSharp.Services
 {
@@ -58,7 +59,7 @@ namespace IoTSharp.Services
         internal Task Server_Started(EventArgs e)
         {
             _logger.LogInformation($"MqttServer is  started");
-            uptime = DateTime.Now;
+            uptime = DateTime.UtcNow;
             return Task.CompletedTask;
         }
 
@@ -173,7 +174,7 @@ namespace IoTSharp.Services
                             _thumbprint = e.ClientCertificate?.Thumbprint;
                         }
                             _logger.LogInformation($"ClientId={obj.ClientId},Endpoint={obj.Endpoint},Username={obj.UserName}，Password={obj.Password}");
-                        var mcr = _dbContextcv.DeviceIdentities.Include(d => d.Device).AsSplitQuery().FirstOrDefault(mc =>
+                        var mcr = _dbContextcv.DeviceIdentities.Include(d => d.Device).FirstOrDefault(mc =>
                                               (mc.IdentityType == IdentityType.AccessToken && mc.IdentityId == obj.UserName) ||
                                              ( mc.IdentityType == IdentityType.X509Certificate &&  mc.IdentityId == _thumbprint ) ||
                                              ( mc.IdentityType == IdentityType.DevicePassword && mc.IdentityId == obj.UserName && mc.IdentityValue == obj.Password)
@@ -194,9 +195,9 @@ namespace IoTSharp.Services
                                 e.ReasonCode = MQTTnet.Protocol.MqttConnectReasonCode.ServerUnavailable;
                             }
                         }
-                        else if (_dbContextcv.AuthorizedKeys.Any(ak => ak.AuthToken == obj.Password))
+                        else if (_dbContextcv.AuthorizedKeys.Any(ak => ak.AuthToken == obj.Password && ak.Deleted==false))
                         {
-                            var ak = _dbContextcv.AuthorizedKeys.Include(ak => ak.Customer).Include(ak => ak.Tenant).Include(ak => ak.Devices).AsSplitQuery().FirstOrDefault(ak => ak.AuthToken == obj.Password);
+                            var ak = _dbContextcv.AuthorizedKeys.Include(ak => ak.Customer).Include(ak => ak.Tenant).Include(ak => ak.Devices).FirstOrDefault(ak => ak.AuthToken == obj.Password && ak.Deleted==false);
                             if (ak != null && !ak.Devices.Any(dev => dev.Name == obj.UserName))
                             {
                                 var devvalue = new Device() { Name = obj.UserName, DeviceType = DeviceType.Device, Timeout = 300 };
@@ -208,7 +209,7 @@ namespace IoTSharp.Services
                                 _dbContextcv.SaveChanges();
                                 _queue.PublishConnect(devvalue.Id,  ConnectStatus.Connected);
                             }
-                            var mcp = _dbContextcv.DeviceIdentities.Include(d => d.Device).AsSingleQuery().FirstOrDefault(mc => mc.IdentityType == IdentityType.DevicePassword && mc.IdentityId == obj.UserName && mc.IdentityValue == obj.Password);
+                            var mcp = _dbContextcv.DeviceIdentities.Include(d => d.Device).FirstOrDefault(mc => mc.IdentityType == IdentityType.DevicePassword && mc.IdentityId == obj.UserName && mc.IdentityValue == obj.Password);
                             if (mcp != null)
                             {
                                 e.SessionItems.Add(nameof(Device), mcp.Device);
@@ -220,6 +221,34 @@ namespace IoTSharp.Services
                             {
                                 e.ReasonCode = MQTTnet.Protocol.MqttConnectReasonCode.BadUserNameOrPassword;
                                 _logger.LogInformation($"Bad username or  password/AuthToken {obj.UserName},connection {obj.Endpoint} refused");
+                            }
+                        }
+                        else if (_dbContextcv.Produces.Any(ak =>  obj.UserName.StartsWith( ak.Name+"_")  &&   ak.ProduceToken == obj.Password && ak.Deleted == false))
+                        {
+                            var ak = _dbContextcv.Produces.Include(ak => ak.Customer).Include(ak => ak.Tenant).Include(ak => ak.Devices).FirstOrDefault(ak =>  ak.ProduceToken == obj.Password && ak.Deleted == false);
+                            if (ak!=null &&   ak.Devices.Any(d => d.Name == obj.UserName && d.Deleted == false))
+                            {
+                                var devvalue = new Device() { Name = obj.UserName, DeviceType = ak.DefaultDeviceType, Timeout = ak.DefaultTimeout };
+                                devvalue.Tenant = ak.Tenant;
+                                devvalue.Customer = ak.Customer;
+                                _dbContextcv.Device.Add(devvalue);
+                                ak.Devices.Add(devvalue);
+                                _dbContextcv.AfterCreateDevice(devvalue,ak.Id);
+                                _dbContextcv.SaveChanges();
+                                _queue.PublishConnect(devvalue.Id, ConnectStatus.Connected);
+                            }
+                            var mcp = ak.Devices.FirstOrDefault(d => d.Name == obj.UserName && d.Deleted == false);
+                            if (mcp != null)
+                            {
+                                e.SessionItems.Add(nameof(Device), mcp);
+                                e.ReasonCode = MQTTnet.Protocol.MqttConnectReasonCode.Success;
+                                _queue.PublishConnect(mcp.Id, ConnectStatus.Disconnected);
+                                _logger.LogInformation($"Produce {ak.Name}'s   device {mcp.Name}({mcp.Id}) is online ! Client name  is {obj.UserName} and  is endpoint{obj.Endpoint}");
+                            }
+                            else
+                            {
+                                e.ReasonCode = MQTTnet.Protocol.MqttConnectReasonCode.BadUserNameOrPassword;
+                                _logger.LogInformation($"Bad device name  or  ProduceToken {obj.UserName},connection {obj.Endpoint} refused");
                             }
                         }
                         else

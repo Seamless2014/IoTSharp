@@ -30,7 +30,7 @@ namespace IoTSharp.Controllers
         }
 
         [HttpPost]
-        public ApiResult<PagedData<DeviceModel>> Index([FromQuery] DeviceModelParam m)
+        public ApiResult<PagedData<DeviceModel>> Index([FromQuery] QueryDto m)
         {
             try
             {
@@ -39,7 +39,7 @@ namespace IoTSharp.Controllers
                 {
                     condition.And(x => x.ModelName == m.Name);
                 }
-                return new ApiResult<PagedData<DeviceModel>>(ApiCode.Success, "OK", new PagedData<DeviceModel>() { rows = _context.DeviceModels.Where(condition).Skip((m.offset) * m.limit).Take(m.limit).ToList(), total = _context.DeviceModels.Count(condition) });
+                return new ApiResult<PagedData<DeviceModel>>(ApiCode.Success, "OK", new PagedData<DeviceModel>() { rows = _context.DeviceModels.Where(condition).OrderBy(d=>d.ModelName).Skip((m.Offset) * m.Limit).Take(m.Limit).ToList(), total = _context.DeviceModels.Count(condition) });
             }
             catch (Exception e)
             {
@@ -79,7 +79,7 @@ namespace IoTSharp.Controllers
             try
             {
                 DeviceModel dm = new DeviceModel();
-                dm.CreateDateTime = DateTime.Now;
+                dm.CreateDateTime = DateTime.UtcNow;
                 dm.ModelStatus = 1;
                 dm.ModelName = m.ModelName;
                 dm.ModelDesc = m.ModelDesc;
@@ -150,7 +150,7 @@ namespace IoTSharp.Controllers
                     CommandName = m.CommandName,
                     DeviceModelId = m.DeviceModelId,
                     CommandTemplate = m.CommandTemplate,
-                    CreateDateTime = DateTime.Now
+                    CreateDateTime = DateTime.UtcNow
                 };
 
                 _context.DeviceModelCommands.Add(dmc);

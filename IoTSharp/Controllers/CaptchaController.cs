@@ -52,6 +52,22 @@ namespace IoTSharp.Controllers
             _caching.Set("Captcha", list, expiration: TimeSpan.FromMinutes(20));
             return new ApiResult<ModelCaptcha>(ApiCode.Success, "OK", data);
         }
+
+
+
+        /// <summary>
+        /// 生成一个图形认证
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet, AllowAnonymous]
+        public FileStreamResult Imgs()
+        {
+             var orginfile = typeof(CaptchaController).Assembly.GetManifestResourceStream($"IoTSharp.Resources.slide{RandomNumberGenerator.GetInt32(1, 15)}.jpg");
+            return File(orginfile, "image/jpeg");
+        }
+
+
+
         /// <summary>
         /// 校验图形认证
         /// </summary>
@@ -83,8 +99,8 @@ namespace IoTSharp.Controllers
 
         private ModelCaptcha CreateImage()
         {
-            using var buzzlefile = new MemoryStream(Properties.Resources.ResourceManager.GetObject("buzzle_template_png") as byte[]);
-            using var orginfile = new MemoryStream(Properties.Resources.ResourceManager.GetObject($"slide{RandomNumberGenerator.GetInt32(1,9)}_jpg") as byte[]);
+            using var buzzlefile = typeof(CaptchaController).Assembly.GetManifestResourceStream("IoTSharp.Resources.buzzle-template.png");
+            using var orginfile =  typeof(CaptchaController).Assembly.GetManifestResourceStream($"IoTSharp.Resources.slide{RandomNumberGenerator.GetInt32(1, 15)}.jpg");
             using var buzzlefilestream = new SKManagedStream(buzzlefile);
             using var orginfilestream = new SKManagedStream(orginfile);
             using var buzzle = SKBitmap.Decode(buzzlefilestream);

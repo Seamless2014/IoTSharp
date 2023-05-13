@@ -98,7 +98,7 @@ namespace IoTSharp
         /// <param name="custId"></param>
         /// <returns></returns>
         public static Customer GetCustomer(this ApplicationDbContext context, Guid custId) 
-            => context.Customer.Include(c => c.Tenant).AsSingleQuery().FirstOrDefault(c => c.Id  ==  custId);
+            => context.Customer.Include(c => c.Tenant).FirstOrDefault(c => c.Id  ==  custId);
       /// <summary>
       /// 获取指定的租户信息
       /// </summary>
@@ -121,7 +121,7 @@ namespace IoTSharp
         /// <returns></returns>
         public static Guid  GetUserId(this ClaimsPrincipal _user)
         {
-            return  Guid.Parse( _user.FindFirstValue(ClaimTypes.NameIdentifier));
+            return  Guid.Parse( _user.FindFirstValue(ClaimTypes.NameIdentifier) ?? Guid.Empty.ToString());
         }
         /// <summary>
         /// 获取当前用户的ID
@@ -139,7 +139,7 @@ namespace IoTSharp
         /// <returns></returns>
         public static Guid GetCustomerId(this ClaimsPrincipal _user)
         {
-            return Guid.Parse(_user.FindFirstValue(IoTSharpClaimTypes.Customer));
+            return Guid.Parse(_user.FindFirstValue(IoTSharpClaimTypes.Customer) ?? Guid.Empty.ToString());
         }
         
         public static IHostBuilder ConfigureIoTSharpHost(this IHostBuilder hostBuilder)
@@ -320,7 +320,7 @@ namespace IoTSharp
                 if (devname != "me" && device.DeviceType == DeviceType.Gateway)
                 {
                     var ch = from g in _dbContext.Gateway.Include(g => g.Tenant).Include(g => g.Customer).Include(c => c.Children) where g.Id == device.Id select g;
-                    var gw = ch.AsSplitQuery().FirstOrDefault();
+                    var gw = ch.FirstOrDefault();
                     if(gw == null)
                     {//未处理null的情况
 

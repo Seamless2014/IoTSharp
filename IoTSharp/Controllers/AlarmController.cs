@@ -45,19 +45,19 @@ namespace IoTSharp.Controllers
                 {
                     case OriginatorType.Device:
                         originator =
-                            _context.Device.FirstOrDefault(d => d.Id.ToString() == oname || d.Name == oname)?.Id ??
+                            _context.Device.FirstOrDefault(d => (d.Id.ToString() == oname || d.Name == oname) && d.Deleted == false)?.Id ??
                             Guid.Empty;
                         break;
 
                     case OriginatorType.Gateway:
                         originator =
-                            _context.Gateway.FirstOrDefault(d => d.Id.ToString() == oname || d.Name == oname)?.Id ??
+                            _context.Gateway.FirstOrDefault(d =>( d.Id.ToString() == oname || d.Name == oname) && d.Deleted == false)?.Id ??
                             Guid.Empty;
                         break;
 
                     case OriginatorType.Asset:
                         originator =
-                            _context.Assets.FirstOrDefault(d => d.Id.ToString() == oname || d.Name == oname)?.Id ??
+                            _context.Assets.FirstOrDefault(d => (d.Id.ToString() == oname || d.Name == oname) && d.Deleted==false)?.Id ??
                             Guid.Empty;
                         break;
 
@@ -74,7 +74,7 @@ namespace IoTSharp.Controllers
         /// <summary>
         /// 查询告警信息
         /// </summary>
-        /// <param name="m"></param>
+        /// <param name="m">指定OriginatorId时需要填写OriginatorType</param>
         /// <returns></returns>
         [HttpPost]
         public async Task<ApiResult<PagedData<AlarmDto>>> List([FromBody] AlarmParam m)
@@ -124,7 +124,7 @@ namespace IoTSharp.Controllers
             }
 
 
-            if (m.OriginatorType != -1)
+            if (m.OriginatorType >0)
             {
                 condition = condition.And(x => x.OriginatorType == (OriginatorType)m.OriginatorType);
 
@@ -137,8 +137,8 @@ namespace IoTSharp.Controllers
             return new ApiResult<PagedData<AlarmDto>>(ApiCode.Success, "OK", new PagedData<AlarmDto>
             {
                 total = await _context.Alarms.CountAsync(condition),
-                rows = _context.Alarms.OrderByDescending(c => c.AckDateTime).Where(condition).Skip((m.offset) * m.limit)
-                    .Take(m.limit)
+                rows = _context.Alarms.OrderByDescending(c => c.AckDateTime).Where(condition).Skip((m.Offset) * m.Limit)
+                    .Take(m.Limit)
                     .ToList().Select(c => new AlarmDto
                     {
                         ClearDateTime = c.ClearDateTime,
@@ -232,13 +232,13 @@ namespace IoTSharp.Controllers
                 if (alarm.AlarmStatus == AlarmStatus.Active_UnAck)
                 {
                     alarm.AlarmStatus = AlarmStatus.Active_Ack;
-                    alarm.AckDateTime = DateTime.Now;
+                    alarm.AckDateTime = DateTime.UtcNow;
                 }
 
                 if (alarm.AlarmStatus == AlarmStatus.Cleared_UnAck)
                 {
                     alarm.AlarmStatus = AlarmStatus.Cleared_Act;
-                    alarm.AckDateTime = DateTime.Now;
+                    alarm.AckDateTime = DateTime.UtcNow;
 
                 }
                 _context.Alarms.Update(alarm);
@@ -268,13 +268,13 @@ namespace IoTSharp.Controllers
                 if (alarm.AlarmStatus == AlarmStatus.Active_Ack)
                 {
                     alarm.AlarmStatus = AlarmStatus.Cleared_Act;
-                    alarm.ClearDateTime = DateTime.Now;
+                    alarm.ClearDateTime = DateTime.UtcNow;
 
                 }
                 if (alarm.AlarmStatus == AlarmStatus.Active_UnAck)
                 {
                     alarm.AlarmStatus = AlarmStatus.Active_Ack;
-                    alarm.ClearDateTime = DateTime.Now;
+                    alarm.ClearDateTime = DateTime.UtcNow;
 
                 }
                 _context.Alarms.Update(alarm);

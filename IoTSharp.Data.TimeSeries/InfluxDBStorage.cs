@@ -26,13 +26,13 @@ namespace IoTSharp.Storage
         private readonly ILogger _logger;
         private readonly IServiceScope scope;
         private readonly ObjectPool<InfluxDBClient> _taospool;
-        private readonly string _org;
-        private readonly string _bucket;
-        private readonly string _token;
-        private readonly string _latest;
+        private readonly string? _org;
+        private readonly string? _bucket;
+        private readonly string? _token;
+        private readonly string? _latest;
 
         public InfluxDBStorage(ILogger<InfluxDBStorage> logger, IServiceScopeFactory scopeFactor
-           , IOptions<AppSettings> options,   ObjectPool<InfluxDBClient> taospool
+           , IOptions<AppSettings> options, ObjectPool<InfluxDBClient> taospool
             )
         {
             _appSettings = options.Value;
@@ -96,13 +96,19 @@ from(bucket: ""{_bucket}"")
             {
                 ft.Records.ForEach(fr =>
                 {
-                    dt.Add(new TelemetryDataDto()
+                    var _frtype = ft.Columns.Find(fv => fv.Label == "_value")?.DataType;
+                    if (_frtype != null)
                     {
-                        KeyName = fr.GetField(),
-                        DateTime = fr.GetTimeInDateTime().GetValueOrDefault(),
-                        Value = fr.GetValue() ,
-                         DataType= InfluxTypeToIoTSharpType(ft.Columns.Find(fv=>fv.Label=="_value")?.DataType)
-                    });
+                        var dt_iot_type = InfluxTypeToIoTSharpType(_frtype);
+                        dt.Add(new TelemetryDataDto()
+                        {
+                            KeyName = fr.GetField(),
+                            DateTime = fr.GetTimeInDateTime().GetValueOrDefault(),
+                            Value = fr.GetValue(),
+                            DataType = dt_iot_type
+                        });
+                    }
+
                 });
             });
             return dt;
@@ -162,8 +168,8 @@ from(bucket: ""{_bucket}"")
             }
             if (every > TimeSpan.Zero && aggregate != Aggregate.None)
             {
-                sb.AppendLine($@"|> aggregateWindow(every: {(long)every.TotalMilliseconds}ms, fn: {Enum.GetName(aggregate).ToLower()}, createEmpty: false)");
-                sb.AppendLine(@$"|> yield(name: ""{Enum.GetName( aggregate).ToLower()}"")");
+                sb.AppendLine($@"|> aggregateWindow(every: {(long)every.TotalMilliseconds}ms, fn: {Enum.GetName(aggregate)?.ToLower()}, createEmpty: false)");
+                sb.AppendLine(@$"|> yield(name: ""{Enum.GetName( aggregate)?.ToLower()}"")");
             }
             else
             {
@@ -186,7 +192,7 @@ from(bucket: ""{_bucket}"")
                     {
                         if (kp.Value != null)
                         {
-                            TelemetryData tdata = new TelemetryData() { DateTime = msg.ts, DeviceId = msg.DeviceId, KeyName = kp.Key, Value_DateTime = new DateTime(1970, 1, 1) };
+                            TelemetryData tdata = new TelemetryData() { DateTime = msg.ts, DeviceId = msg.DeviceId, KeyName = kp.Key, Value_DateTime = DateTime.UnixEpoch };
                             tdata.FillKVToMe(kp);
                             var point = PointData.Measurement(nameof(TelemetryData))
                 .Tag("DeviceId", tdata.DeviceId.ToString());
@@ -244,8 +250,9 @@ from(bucket: ""{_bucket}"")
             return (result, telemetries);
         }
 
-      
-
-        
+        public Task<bool> CheckTelemetryStorage()
+        {
+            return Task.FromResult(true);
+        }
     }
 }

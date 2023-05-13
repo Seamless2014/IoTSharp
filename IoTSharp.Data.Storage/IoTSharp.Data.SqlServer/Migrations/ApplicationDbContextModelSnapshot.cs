@@ -17,7 +17,7 @@ namespace IoTSharp.Data.SqlServer.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "6.0.9")
+                .HasAnnotation("ProductVersion", "6.0.10")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder, 1L, 1);
@@ -87,6 +87,9 @@ namespace IoTSharp.Data.SqlServer.Migrations
 
                     b.Property<Guid?>("CustomerId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("Deleted")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
@@ -196,6 +199,9 @@ namespace IoTSharp.Data.SqlServer.Migrations
 
                     b.Property<Guid?>("CustomerId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("Deleted")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Name")
                         .HasColumnType("nvarchar(max)");
@@ -486,6 +492,9 @@ namespace IoTSharp.Data.SqlServer.Migrations
 
                     b.Property<string>("Country")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("Deleted")
+                        .HasColumnType("bit");
 
                     b.Property<string>("Email")
                         .HasColumnType("nvarchar(max)");
@@ -1247,11 +1256,26 @@ namespace IoTSharp.Data.SqlServer.Migrations
                     b.Property<Guid?>("ExecutorId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("FlowClass")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FlowIcon")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FlowNameSpace")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<Guid?>("FlowRuleRuleId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("FlowShapeType")
+                        .HasColumnType("nvarchar(max)");
+
                     b.Property<int>("FlowStatus")
                         .HasColumnType("int");
+
+                    b.Property<string>("FlowTag")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("FlowType")
                         .HasColumnType("nvarchar(max)");
@@ -1263,6 +1287,9 @@ namespace IoTSharp.Data.SqlServer.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Incoming")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Left")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("NodeProcessClass")
@@ -1306,6 +1333,9 @@ namespace IoTSharp.Data.SqlServer.Migrations
 
                     b.Property<DateTime>("TesterDateTime")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("Top")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("bpmnid")
                         .HasColumnType("nvarchar(max)");
@@ -1458,6 +1488,9 @@ namespace IoTSharp.Data.SqlServer.Migrations
                     b.Property<int>("DefaultTimeout")
                         .HasColumnType("int");
 
+                    b.Property<bool>("Deleted")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
@@ -1499,6 +1532,9 @@ namespace IoTSharp.Data.SqlServer.Migrations
 
                     b.Property<string>("DefaultValue")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<bool>("Deleted")
+                        .HasColumnType("bit");
 
                     b.Property<bool>("Display")
                         .HasColumnType("bit");
@@ -1840,7 +1876,10 @@ namespace IoTSharp.Data.SqlServer.Migrations
                     b.Property<string>("Country")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("EMail")
+                    b.Property<bool>("Deleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Email")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")

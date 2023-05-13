@@ -32,38 +32,43 @@ namespace IoTSharp.Controllers
         }
 
         [HttpGet]
-        public async Task<ApiResult<PagedData<AssetDto>>> List([FromQuery] AssetParam m)
+        public async Task<ApiResult<PagedData<AssetDto>>> List([FromQuery] QueryDto m)
         {
             var profile = this.GetUserProfile();
+
             Expression<Func<Asset, bool>> condition = x =>
-                x.Customer.Id == profile.Customer && x.Tenant.Id == profile.Tenant;
+                x.Customer.Id == profile.Customer && x.Tenant.Id == profile.Tenant && x.Deleted==false;
 
 
             if (!string.IsNullOrEmpty(m.Name))
             {
                 condition = condition.And(x => x.Name.Contains(m.Name));
             }
-
+            var query = _context.Assets.Where(condition).OrderBy(k => k.Name).Skip((m.Offset) * m.Limit).Take(m.Limit)
+                    .Select(c => new AssetDto
+                    { Id = c.Id, AssetType = c.AssetType, Description = c.Description, Name = c.Name });
             return new ApiResult<PagedData<AssetDto>>(ApiCode.Success, "OK", new PagedData<AssetDto>
             {
                 total = await _context.Assets.CountAsync(condition),
-                rows = _context.Assets.Where(condition).Where(condition).Skip((m.offset) * m.limit).Take(m.limit)
-                    .ToList().Select(c => new AssetDto
-                        {Id = c.Id, AssetType = c.AssetType, Description = c.Description, Name = c.Name}).ToList()
-
+                rows = await query.ToListAsync()
             });
 
         }
         [HttpGet]
-        public async Task<ApiResult<List<AssetRelation>>> AssetRelations(Guid assetid)
+        public async Task<ApiResult<PagedData<AssetRelation>>> AssetRelations(Guid assetid)
         {
-            var result = await _context.Assets.Include(c => c.OwnedAssets).AsSingleQuery().SingleOrDefaultAsync(c => c.Id == assetid);
-            return new ApiResult<List<AssetRelation>>(ApiCode.Success, "OK", result?.OwnedAssets);
-
-
+            var data =new  PagedData<AssetRelation>();
+            var result = await _context.Assets.Include(c => c.OwnedAssets).SingleOrDefaultAsync(c => c.Id == assetid);
+            data.rows = result.OwnedAssets;
+            data.total = result.OwnedAssets.Count;
+            return new ApiResult<PagedData<AssetRelation>>(ApiCode.Success, "OK",  data);
         }
 
-
+        /// <summary>
+        /// 获取资产的属性和遥测数据
+        /// </summary>
+        /// <param name="assetid"></param>
+        /// <returns></returns>
 
 
         [HttpGet]
@@ -72,9 +77,9 @@ namespace IoTSharp.Controllers
 
             var profile = this.GetUserProfile();
 
-            var result = _context.Assets.Include(c => c.OwnedAssets).AsSingleQuery()
+            var result = _context.Assets.Include(c => c.OwnedAssets)
                 .SingleOrDefault(x =>
-                    x.Id == assetid && x.Customer.Id == profile.Customer && x.Tenant.Id == profile.Tenant)?.OwnedAssets
+                    x.Id == assetid && x.Customer.Id == profile.Customer && x.Tenant.Id == profile.Tenant && x.Deleted==false)?.OwnedAssets
                 .ToList().GroupBy(c => c.DeviceId).Select(c => new
                     {
                         Device = c.Key,
@@ -106,13 +111,17 @@ namespace IoTSharp.Controllers
         }
 
 
-
+        /// <summary>
+        /// 根据资产Id获取资产信息
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
         [HttpGet]
         public async Task<ApiResult<AssetDto>> Get(Guid id)
         {
             var profile = this.GetUserProfile();
-            var asset = await _context.Assets.Include(c => c.Customer).Include(c => c.Tenant).AsSingleQuery().SingleOrDefaultAsync(c =>
-                c.Id == id && c.Customer.Id == profile.Customer && c.Tenant.Id == profile.Tenant);
+            var asset = await _context.Assets.Include(c => c.Customer).Include(c => c.Tenant).SingleOrDefaultAsync(c =>
+                c.Id == id && c.Customer.Id == profile.Customer && c.Tenant.Id == profile.Tenant && c.Deleted==false);
             if (asset != null)
             {
                 return new ApiResult<AssetDto>(ApiCode.Success, "OK",
@@ -128,14 +137,18 @@ namespace IoTSharp.Controllers
             return new ApiResult<AssetDto>(ApiCode.CantFindObject, "Not found asset", null);
 
         }
-
+        /// <summary>
+        /// 修改资产信息
+        /// </summary>
+        /// <param name="dto"></param>
+        /// <returns></returns>
         [HttpPut]
         public async Task<ApiResult<bool>> Update([FromBody] AssetDto dto)
         {
 
             var profile = this.GetUserProfile();
-            var asset = await _context.Assets.Include(c => c.Customer).Include(c => c.Tenant).AsSingleQuery().SingleOrDefaultAsync(c =>
-                c.Id == dto.Id && c.Customer.Id == profile.Customer && c.Tenant.Id == profile.Tenant);
+            var asset = await _context.Assets.Include(c => c.Customer).Include(c => c.Tenant).SingleOrDefaultAsync(c =>
+                c.Id == dto.Id && c.Customer.Id == profile.Customer && c.Tenant.Id == profile.Tenant && c.Deleted==false);
             if (asset == null)
             {
 
@@ -159,10 +172,14 @@ namespace IoTSharp.Controllers
             }
 
         }
-
+        /// <summary>
+        /// 保存资产信息
+        /// </summary>
+        /// <param name="dto"></param>
+        /// <returns></returns>
 
         [HttpPost]
-        public async Task<ApiResult<bool>> Save([FromBody] AssetDto dto)
+        public async Task<ApiResult<bool>> Save([FromBody] AssetAddDto dto)
         {
             try
             {
@@ -195,15 +212,15 @@ namespace IoTSharp.Controllers
             try
             {
                 var asset = await _context.Assets.Include(c => c.Customer).Include(c => c.Tenant)
-                    .Include(c => c.OwnedAssets).AsSingleQuery().SingleOrDefaultAsync(c =>
-                        c.Id == id && c.Customer.Id == profile.Customer && c.Tenant.Id == profile.Tenant);
+                    .Include(c => c.OwnedAssets).SingleOrDefaultAsync(c =>
+                        c.Id == id && c.Customer.Id == profile.Customer && c.Tenant.Id == profile.Tenant && c.Deleted==false);
                 if (asset == null)
                 {
 
                     return new ApiResult<bool>(ApiCode.CantFindObject, "Not found asset", false);
                 }
-
-                _context.Assets.Remove(asset);
+                asset.Deleted = true;
+                _context.Assets.Update(asset);
                 await _context.SaveChangesAsync();
                 return new ApiResult<bool>(ApiCode.Success, "Ok", true);
             }
@@ -214,18 +231,22 @@ namespace IoTSharp.Controllers
             }
 
         }
-
+        /// <summary>
+        /// 增加资产
+        /// </summary>
+        /// <param name="m"></param>
+        /// <returns></returns>
 
         [HttpPost]
-        public async Task<ApiResult<bool>> addDevice(ModelAssetDevice m)
+        public async Task<ApiResult<bool>> addDevice(ModelAddAssetDevice m)
         {
 
             var profile = this.GetUserProfile();
             try
             {
                 var asset = await _context.Assets.Include(c => c.Customer).Include(c => c.Tenant)
-                    .Include(c => c.OwnedAssets).AsSingleQuery().SingleOrDefaultAsync(c =>
-                        c.Id == m.AssetId && c.Customer.Id == profile.Customer && c.Tenant.Id == profile.Tenant);
+                    .Include(c => c.OwnedAssets).SingleOrDefaultAsync(c =>
+                        c.Id == m.AssetId && c.Customer.Id == profile.Customer && c.Tenant.Id == profile.Tenant && c.Deleted==false);
                 if (asset == null)
                 {
 
@@ -286,8 +307,8 @@ namespace IoTSharp.Controllers
             try
             {
                 var asset = await _context.Assets.Include(c => c.Customer).Include(c => c.Tenant)
-                    .Include(c => c.OwnedAssets).AsSingleQuery().SingleOrDefaultAsync(c =>
-                        c.Id == m.AssetId && c.Customer.Id == profile.Customer && c.Tenant.Id == profile.Tenant);
+                    .Include(c => c.OwnedAssets).SingleOrDefaultAsync(c =>
+                        c.Id == m.AssetId && c.Customer.Id == profile.Customer && c.Tenant.Id == profile.Tenant && c.Deleted==false);
 
                 await _context.SaveChangesAsync();
                 return new ApiResult<bool>(ApiCode.Success, "Ok", true);
@@ -299,7 +320,11 @@ namespace IoTSharp.Controllers
             }
 
         }
-
+        /// <summary>
+        /// 根据Id移除资产的属性或者遥测
+        /// </summary>
+        /// <param name="relationId"></param>
+        /// <returns></returns>
         [HttpDelete]
 
         public async Task<ApiResult<bool>> RemoveAssetRaletions(Guid relationId)
@@ -324,11 +349,15 @@ namespace IoTSharp.Controllers
             }
         }
 
-
+        /// <summary>
+        ///  修改资产和设备关联属性或者遥测信息
+        /// </summary>
+        /// <param name="m"></param>
+        /// <returns></returns>
 
         [HttpPost]
 
-        public async Task<ApiResult<bool>> EditRelation(ModelAssetAttrItem m)
+        public async Task<ApiResult<bool>> EditRelation(ModelEditAssetAttrItem m)
         {
             var profile = this.GetUserProfile();
             try

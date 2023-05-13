@@ -17,6 +17,8 @@ using IoTSharp.Dtos;
 using IoTSharp.Models;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using IoTSharp.Contracts;
+using IoTSharp.Extensions;
+using System.Linq.Expressions;
 
 namespace IoTSharp.Controllers
 {
@@ -46,24 +48,18 @@ namespace IoTSharp.Controllers
         }
 
         /// <summary>
-        /// 系统管理员用来获取全部租户列表
+        /// 产品列表
         /// </summary>
+        /// <param name="m"></param>
         /// <returns></returns>
         [Authorize(Roles = nameof(UserRole.SystemAdmin))]
         [HttpGet]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ApiResult), StatusCodes.Status400BadRequest)]
-        [ProducesDefaultResponseType]
-        public async Task<ActionResult<List<Tenant>>> GetTenant()
+        public async Task<ApiResult<PagedData<Tenant>>> GetTenant([FromQuery] QueryDto m)
         {
-            try
-            {
-                return Ok(new ApiResult<PagedData<Tenant>>(ApiCode.Exception, "Ok", new PagedData<Tenant>() { rows = await _context.Tenant.ToListAsync(), total = await _context.Tenant.CountAsync() }));
-            }
-            catch (Exception ex)
-            {
-                return Ok(new ApiResult(ApiCode.Exception, ex.Message));
-            }
+            var profile = this.GetUserProfile();
+            var querym = _context.Tenant.Where(c=>c.Deleted==false);
+            var data = await m.Query(querym, c => c.Name);
+            return new ApiResult<PagedData<Tenant>>(ApiCode.Success, "OK", data);
         }
 
         /// <summary>
@@ -81,7 +77,7 @@ namespace IoTSharp.Controllers
             var tenant = await _context.Tenant.FindAsync(id);
             if (tenant == null)
             {
-                return new ApiResult<Tenant>(ApiCode.Success, "can't find this object", null);
+                return new ApiResult<Tenant>(ApiCode.CantFindObject, "can't find this object", null);
             }
 
             return new ApiResult<Tenant>(ApiCode.Success, "OK", tenant);
@@ -115,19 +111,19 @@ namespace IoTSharp.Controllers
             }
             catch (DbUpdateConcurrencyException ex)
             {
-                if (!_context.Tenant.Any(c=>c.Id==id))
+                if (!_context.Tenant.Any(c=>c.Id==id && c.Deleted==false))
                 {
                     return new ApiResult<Tenant>(ApiCode.CantFindObject, "cant't find this object", tenant);
                 }
                 else
                 {
 
-                    return new ApiResult<Tenant>(ApiCode.InValidData, ex.Message, tenant);
+                    return new ApiResult<Tenant>(ApiCode.Exception, ex.Message, tenant);
                 }
             }
             catch (Exception ex)
             {
-                return new ApiResult<Tenant>(ApiCode.InValidData, ex.Message, tenant);
+                return new ApiResult<Tenant>(ApiCode.Exception, ex.Message, tenant);
             }
 
             return new ApiResult<Tenant>(ApiCode.Success, "Ok", tenant);
@@ -154,7 +150,7 @@ namespace IoTSharp.Controllers
             catch (Exception ex)
             {
 
-                return new ApiResult<Tenant>(ApiCode.InValidData, ex.Message, tenant);
+                return new ApiResult<Tenant>(ApiCode.Exception, ex.Message, tenant);
             }
         }
         /// <summary>
@@ -178,22 +174,16 @@ namespace IoTSharp.Controllers
             }
             try
             {
-                _context.Tenant.Remove(tenant);
+                tenant.Deleted = true;
+                _context.Tenant.Update(tenant);
                 await _context.SaveChangesAsync();
                 return new ApiResult<Tenant>(ApiCode.Success, "Ok", tenant);
             }
             catch (Exception ex)
             {
-                return new ApiResult<Tenant>(ApiCode.InValidData, ex.Message, tenant);
+                return new ApiResult<Tenant>(ApiCode.Exception, ex.Message, tenant);
             
             }
-        }
-
-        private ApiResult<bool> TenantExists(Guid id)
-        {
-            return new ApiResult<bool>(ApiCode.InValidData, "Ok", _context.Tenant.Any(e => e.Id == id));
-
-
         }
     }
 }

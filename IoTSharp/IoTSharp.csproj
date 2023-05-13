@@ -1,7 +1,6 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
-
 	<PropertyGroup>
-		<TargetFramework>net6.0</TargetFramework>
+		<TargetFramework>net7.0</TargetFramework>
 		<TypeScriptCompileBlocked>true</TypeScriptCompileBlocked>
 		<TypeScriptToolsVersion>Latest</TypeScriptToolsVersion>
 		<IsPackable>false</IsPackable>
@@ -25,12 +24,11 @@
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<IsPackable>true</IsPackable>
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
-		<Copyright>Copyright 2018-2022  Yanhong Ma</Copyright>
+		<Copyright>Copyright 2018-2023  Yanhong Ma</Copyright>
 		<AssemblyVersion>3.0.0.0</AssemblyVersion>
 		<FileVersion>3.0.0.0</FileVersion>
 		<PackageIcon>96x96.png</PackageIcon>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
-
 		<RestoreAdditionalProjectSources>
 			https://api.nuget.org/v3/index.json;
 			https://www.myget.org/F/iotsharp/api/v3/index.json;
@@ -39,111 +37,58 @@
 		<DocumentationFile>IoTSharp.xml</DocumentationFile>
 		<NoWarn>1701;1702;1591</NoWarn>
 		<EnforceCodeStyleInBuild>True</EnforceCodeStyleInBuild>
-		<Configurations>Debug;Release;Release_VUE;Debug_VUE</Configurations>
+		<Configurations>Debug;Release;</Configurations>
 	</PropertyGroup>
+
 	<PropertyGroup Condition="'$(Configuration)' == 'Debug' OR '$(Configuration)' == 'Release'">
 		<SpaRoot>ClientApp\</SpaRoot>
-		<SpaProxyServerUrl>http://localhost:44412</SpaProxyServerUrl>
-		<SpaProxyLaunchCommand>npm start</SpaProxyLaunchCommand>
-		<DefaultItemExcludes>$(DefaultItemExcludes);$(SpaRoot)node_modules\**</DefaultItemExcludes>
-		<!-- Set this to true if you enable server-side prerendering -->
-		<BuildServerSideRenderer>false</BuildServerSideRenderer>
-	</PropertyGroup>
-	<PropertyGroup Condition="'$(Configuration)' == 'Debug_VUE' OR '$(Configuration)' == 'Release_VUE'">
-		<SpaRoot>ClientAppVue\</SpaRoot>
-		<SpaProxyServerUrl>http://localhost:8080</SpaProxyServerUrl>
-		<SpaProxyLaunchCommand>npm run serve</SpaProxyLaunchCommand>
+		<SpaProxyServerUrl>http://localhost:8888</SpaProxyServerUrl>
+		<SpaProxyLaunchCommand>npm run dev</SpaProxyLaunchCommand>
 		<DefaultItemExcludes>$(DefaultItemExcludes);$(SpaRoot)node_modules\**</DefaultItemExcludes>
 		<!-- Set this to true if you enable server-side prerendering -->
 		<BuildServerSideRenderer>false</BuildServerSideRenderer>
 	</PropertyGroup>
 	<ItemGroup>
 
-		<PackageReference Include="AspNetCore.HealthChecks.System" Version="6.0.5" />
-		<PackageReference Include="AspNetCore.HealthChecks.UI" Version="6.0.5" />
-		<PackageReference Include="AspNetCore.HealthChecks.UI.Client" Version="6.0.5" />
-
-		<PackageReference Include="EasyCaching.InMemory" Version="1.6.1" />
-		<PackageReference Include="EasyCaching.LiteDB" Version="1.6.1" />
-		<PackageReference Include="EasyCaching.Redis" Version="1.6.1" />
-		<PackageReference Include="Figgle" Version="0.4.0" />
+		<PackageReference Include="AspNetCore.HealthChecks.System" Version="7.0.0-rc2.5" />
+		<PackageReference Include="AspNetCore.HealthChecks.UI" Version="7.0.0-rc2.7" />
+		<PackageReference Include="AspNetCore.HealthChecks.UI.Client" Version="7.0.0-rc2.7" />
+		<PackageReference Include="EasyCaching.InMemory" Version="1.9.0" />
+		<PackageReference Include="EasyCaching.LiteDB" Version="1.9.0" />
+		<PackageReference Include="EasyCaching.Redis" Version="1.9.0" />
+		<PackageReference Include="Figgle" Version="0.5.1" />
 		<PackageReference Include="hyjiacan.pinyin4net" Version="4.1.1" />
 		<PackageReference Include="IoTSharp.CoAP.NET" Version="2.0.8" />
 		<PackageReference Include="Jdenticon-net" Version="3.1.2" />
 		<PackageReference Include="Jdenticon.AspNetCore" Version="3.1.2" />
-		<PackageReference Include="LiteDB" Version="5.0.12" />
-
-		<PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="6.0.9" />
-		<PackageReference Include="Microsoft.AspNetCore.SpaProxy" Version="6.0.9" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="6.0.9">
+		<PackageReference Include="LiteDB" Version="5.0.15" />
+		<PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" Version="7.0.3" />
+		<PackageReference Include="Microsoft.AspNetCore.SpaProxy" Version="7.0.3" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="7.0.3">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
 		<PackageReference Include="Microsoft.VisualStudio.Azure.Containers.Tools.Targets" Version="1.17.0" />
-		<PackageReference Include="MimeMapping" Version="1.0.1.37" />
-		<PackageReference Include="MQTTnet" Version="4.1.1.318" />
-		<PackageReference Include="MQTTnet.AspNetCore" Version="4.1.1.318" />
-		<PackageReference Include="MQTTnet.AspNetCore.Routing" Version="0.4.11" />
-		<PackageReference Include="NSwag.AspNetCore" Version="13.17.0" />
+		<PackageReference Include="MimeMapping" Version="1.0.1.50" />
+		<PackageReference Include="MQTTnet" Version="4.1.4.563" />
+		<PackageReference Include="MQTTnet.AspNetCore" Version="4.1.4.563" />
+		<PackageReference Include="MQTTnet.AspNetCore.Routing" Version="0.4.16" />
+		<PackageReference Include="NSwag.AspNetCore" Version="13.18.2" />
 		<PackageReference Include="Rin" Version="2.6.0" />
 		<PackageReference Include="Rin.Mvc" Version="2.6.0" />
 		<PackageReference Include="RulesEngine" Version="4.0.0" />
 		<PackageReference Include="SilkierQuartz" Version="5.0.356" />
 		<PackageReference Include="SkiaSharp.NativeAssets.Linux.NoDependencies" Version="2.88.3" />
 		<PackageReference Include="Storage.Net" Version="9.3.0" />
-		<PackageReference Include="ShardingCore" Version="6.7.0.2" />
-		<PackageReference Include="System.Text.Encoding.CodePages" Version="6.0.0">
-
+		<PackageReference Include="ShardingCore" Version="7.7.1.2" />
+		<PackageReference Include="System.Resources.Extensions" Version="7.0.0" />
+		<PackageReference Include="System.Text.Encoding.CodePages" Version="7.0.0">
 			<TreatAsUsed>true</TreatAsUsed>
 		</PackageReference>
-		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="6.0.9" />
-		<PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="6.0.0" />
-		<PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="6.0.9" />
-		<PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="6.0.9" />
-	</ItemGroup>
-
-	<ItemGroup Condition="'$(Configuration)' == 'Debug_VUE'  OR '$(Configuration)' == 'Release_VUE'">
-		<Compile Remove="ClientApp\**" />
-		<Content Remove="ClientApp\**" />
-		<EmbeddedResource Remove="ClientApp\**" />
-		<None Remove="ClientApp\**" />
-	</ItemGroup>
-	<ItemGroup Condition="'$(Configuration)' == 'Debug' OR '$(Configuration)' == 'Release'">
-		<Folder Include="ClientApp\" />
-		<Compile Remove="ClientAppVue\**" />
-		<Content Remove="ClientAppVue\**" />
-		<EmbeddedResource Remove="ClientAppVue\**" />
-		<None Remove="ClientAppVue\**" />
-	</ItemGroup>
-	<ItemGroup>
-		<Compile Remove="Migrations\**" />
-		<Compile Remove="Resources\images\**" />
-		<Content Remove="Migrations\**" />
-		<Content Remove="Resources\images\**" />
-		<EmbeddedResource Remove="Migrations\**" />
-		<EmbeddedResource Remove="Resources\images\**" />
-		<None Remove="Migrations\**" />
-		<None Remove="Resources\images\**" />
-		<None Remove=".gitignore" />
-		<None Remove="ca.crt" />
-		<None Remove="ca.key" />
-		<None Remove="healthchecksdb" />
-		<None Remove="healthchecksdb-shm" />
-		<None Remove="health_checks.db" />
-		<None Remove="IoTSharp.db" />
-		<None Remove="IoTSharp.xml" />
-		<None Remove="server.crt" />
-		<None Remove="server.key" />
-		<None Remove="TelemetryStorage.db" />
-		<_WebToolingArtifacts Remove="Properties\PublishProfiles\linux-arm64.pubxml" />
-		<_WebToolingArtifacts Remove="Properties\PublishProfiles\linux-x64.pubxml" />
-		<_WebToolingArtifacts Remove="Properties\PublishProfiles\osx-x64.pubxml" />
-		<_WebToolingArtifacts Remove="Properties\PublishProfiles\registry.hub.docker.com_iotsharp.pubxml" />
-		<_WebToolingArtifacts Remove="Properties\PublishProfiles\win7-x64.pubxml" />
-		<None Include="..\docs\static\img\96x96.png">
-			<Pack>True</Pack>
-			<PackagePath></PackagePath>
-		</None>
+		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="7.0.3" />
+		<PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="7.0.0" />
+		<PackageReference Include="Microsoft.AspNetCore.Diagnostics.EntityFrameworkCore" Version="7.0.3" />
+		<PackageReference Include="Microsoft.AspNetCore.Identity.UI" Version="7.0.3" />
 	</ItemGroup>
 
 
@@ -154,53 +99,19 @@
 		<None Include="$(SpaRoot)**" Exclude="$(SpaRoot)node_modules\**" />
 	</ItemGroup>
 
-	<Target Name="DebugEnsureNodeEnv_angular" BeforeTargets="Build" Condition=" '$(Configuration)' == 'Debug' And !Exists('$(SpaRoot)node_modules') ">
+	<Target Name="DebugEnsureNodeEnv" BeforeTargets="Build" Condition=" '$(Configuration)' == 'Debug' And !Exists('$(SpaRoot)node_modules') ">
 		<!-- Ensure Node.js is installed -->
 		<Exec Command="node --version" ContinueOnError="true">
 			<Output TaskParameter="ExitCode" PropertyName="ErrorCode" />
 		</Exec>
 		<Error Condition="'$(ErrorCode)' != '0'" Text="Node.js is required to build and run this project. To continue, please install Node.js from https://nodejs.org/, and then restart your command prompt or IDE." />
 		<Message Importance="high" Text="Restoring dependencies using 'npm'. This may take several minutes..." />
-		<Exec WorkingDirectory="$(SpaRoot)" Command="npm install -g yarn " />
-		<Exec WorkingDirectory="$(SpaRoot)" Command="yarn global add @angular/cli" />
-		<Exec WorkingDirectory="$(SpaRoot)" Command="yarn install  " />
+		<Exec WorkingDirectory="$(SpaRoot)" Command="npm install  --legacy-peer-deps" />
 	</Target>
-
-	<Target Name="PublishRunWebpack_angular" AfterTargets="ComputeFilesToPublish" Condition="'$(Configuration)' == 'Release'">
+	<Target Name="PublishRunWebpack" AfterTargets="ComputeFilesToPublish" Condition="'$(Configuration)' == 'Release'">
 		<!-- As part of publishing, ensure the JS resources are freshly built in production mode -->
-		<Exec WorkingDirectory="$(SpaRoot)" Command="npm install -g yarn " />
-		<Exec WorkingDirectory="$(SpaRoot)" Command="yarn global add @angular/cli" />
-		<Exec WorkingDirectory="$(SpaRoot)" Command="yarn install  " />
-		<Exec WorkingDirectory="$(SpaRoot)" Command="npm run build -- --aot" />
-		<!-- Include the newly-built files in the publish output -->
-		<ItemGroup>
-			<DistFiles Include="$(SpaRoot)dist\**; $(SpaRoot)dist-server\**" />
-			<ResolvedFileToPublish Include="@(DistFiles->'%(FullPath)')" Exclude="@(ResolvedFileToPublish)">
-				<RelativePath>wwwroot\%(RecursiveDir)%(FileName)%(Extension)</RelativePath>
-				<CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
-				<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
-			</ResolvedFileToPublish>
-		</ItemGroup>
-	</Target>
-
-
-	<Target Name="DebugEnsureNodeEnv_vue" BeforeTargets="Build" Condition=" '$(Configuration)' == 'Debug_VUE' And !Exists('$(SpaRoot)node_modules') ">
-		<!-- Ensure Node.js is installed -->
-		<Exec Command="node --version" ContinueOnError="true">
-			<Output TaskParameter="ExitCode" PropertyName="ErrorCode" />
-		</Exec>
-		<Error Condition="'$(ErrorCode)' != '0'" Text="Node.js is required to build and run this project. To continue, please install Node.js from https://nodejs.org/, and then restart your command prompt or IDE." />
-		<Message Importance="high" Text="Restoring dependencies using 'npm'. This may take several minutes..." />
-		<Exec WorkingDirectory="$(SpaRoot)" Command="npm install -g yarn " />
-			<Exec WorkingDirectory="$(SpaRoot)" Command=" yarn add   node-sass@4.12.0 " />
-		<Exec WorkingDirectory="$(SpaRoot)" Command="yarn install  " />
-	</Target>
-	<Target Name="PublishRunWebpack_vue" AfterTargets="ComputeFilesToPublish" Condition=" '$(Configuration)' == 'Release_VUE'">
-		<!-- As part of publishing, ensure the JS resources are freshly built in production mode -->
-		<Exec WorkingDirectory="$(SpaRoot)" Command="npm install -g yarn " />
-		<Exec WorkingDirectory="$(SpaRoot)" Command="yarn add  node-sass " />
-		<Exec WorkingDirectory="$(SpaRoot)" Command="yarn install  " />
-		<Exec WorkingDirectory="$(SpaRoot)" Command="yarn build" />
+		<Exec WorkingDirectory="$(SpaRoot)" Command="npm install --legacy-peer-deps" />
+		<Exec WorkingDirectory="$(SpaRoot)" Command="npm run build" />
 		<!-- Include the newly-built files in the publish output -->
 		<ItemGroup>
 			<DistFiles Include="$(SpaRoot)dist\**; $(SpaRoot)dist-server\**" />
@@ -219,6 +130,98 @@
 			<CopyToOutputDirectory>Never</CopyToOutputDirectory>
 		</Content>
 	</ItemGroup>
+
+
+	<ItemGroup>
+		<Compile Remove="Migrations\**" />
+		<Compile Remove="Resources\images\**" />
+		<Content Remove="Migrations\**" />
+		<Content Remove="Resources\images\**" />
+		<EmbeddedResource Remove="Migrations\**" />
+		<EmbeddedResource Remove="Resources\images\**" />
+		<None Remove="Migrations\**" />
+		<None Remove="Resources\images\**" />
+		<None Remove=".gitignore" />
+		<None Remove="ca.crt" />
+		<None Remove="ca.key" />
+		<None Remove="healthchecksdb" />
+		<None Remove="healthchecksdb-shm" />
+		<None Remove="health_checks.db" />
+		<None Remove="IoTSharp.db" />
+		<None Remove="IoTSharp.xml" />
+		<None Remove="Resources\buzzle-template.png" />
+		<None Remove="Resources\slide1.jpg" />
+		<None Remove="Resources\slide10.jpg" />
+		<None Remove="Resources\slide11.jpg" />
+		<None Remove="Resources\slide12.jpg" />
+		<None Remove="Resources\slide13.jpg" />
+		<None Remove="Resources\slide14.jpg" />
+		<None Remove="Resources\slide15.jpg" />
+		<None Remove="Resources\slide16.jpg" />
+		<None Remove="Resources\slide2.jpg" />
+		<None Remove="Resources\slide3.jpg" />
+		<None Remove="Resources\slide4.jpg" />
+		<None Remove="Resources\slide5.jpg" />
+		<None Remove="Resources\slide6.jpg" />
+		<None Remove="Resources\slide7.jpg" />
+		<None Remove="Resources\slide8.jpg" />
+		<None Remove="Resources\slide9.jpg" />
+		<None Remove="server.crt" />
+		<None Remove="server.key" />
+		<None Remove="TelemetryStorage.db" />
+		<_WebToolingArtifacts Remove="Properties\PublishProfiles\linux-arm32.pubxml" />
+		<_WebToolingArtifacts Remove="Properties\PublishProfiles\linux-arm64.pubxml" />
+		<_WebToolingArtifacts Remove="Properties\PublishProfiles\linux-x64.pubxml" />
+		<_WebToolingArtifacts Remove="Properties\PublishProfiles\osx-x64.pubxml" />
+		<_WebToolingArtifacts Remove="Properties\PublishProfiles\registry.hub.docker.com_iotsharp.pubxml" />
+		<_WebToolingArtifacts Remove="Properties\PublishProfiles\win7-x64.pubxml" />
+		<None Include="..\docs\static\img\96x96.png">
+			<Pack>True</Pack>
+			<PackagePath></PackagePath>
+		</None>
+	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Include="Resources\buzzle-template.png" />
+		<EmbeddedResource Include="Resources\slide1.jpg" />
+		<EmbeddedResource Include="Resources\slide10.jpg" />
+		<EmbeddedResource Include="Resources\slide11.jpg" />
+		<EmbeddedResource Include="Resources\slide12.jpg" />
+		<EmbeddedResource Include="Resources\slide13.jpg" />
+		<EmbeddedResource Include="Resources\slide14.jpg" />
+		<EmbeddedResource Include="Resources\slide15.jpg" />
+		<EmbeddedResource Include="Resources\slide16.jpg" />
+		<EmbeddedResource Include="Resources\slide2.jpg" />
+		<EmbeddedResource Include="Resources\slide3.jpg" />
+		<EmbeddedResource Include="Resources\slide4.jpg" />
+		<EmbeddedResource Include="Resources\slide5.jpg" />
+		<EmbeddedResource Include="Resources\slide6.jpg" />
+		<EmbeddedResource Include="Resources\slide7.jpg" />
+		<EmbeddedResource Include="Resources\slide8.jpg" />
+		<EmbeddedResource Include="Resources\slide9.jpg" />
+	</ItemGroup>
+	
+	<ItemGroup>
+		<Resource Include="Resources\buzzle-template.png" />
+		<Resource Include="Resources\Logo.ico" />
+		<Resource Include="Resources\slide1.jpg" />
+		<Resource Include="Resources\slide10.jpg" />
+		<Resource Include="Resources\slide11.jpg" />
+		<Resource Include="Resources\slide12.jpg" />
+		<Resource Include="Resources\slide13.jpg" />
+		<Resource Include="Resources\slide14.jpg" />
+		<Resource Include="Resources\slide15.jpg" />
+		<Resource Include="Resources\slide16.jpg" />
+		<Resource Include="Resources\slide2.jpg" />
+		<Resource Include="Resources\slide3.jpg" />
+		<Resource Include="Resources\slide4.jpg" />
+		<Resource Include="Resources\slide5.jpg" />
+		<Resource Include="Resources\slide6.jpg" />
+		<Resource Include="Resources\slide7.jpg" />
+		<Resource Include="Resources\slide8.jpg" />
+		<Resource Include="Resources\slide9.jpg" />
+	</ItemGroup>
+
 	<ItemGroup>
 		<ProjectReference Include="..\IoTSharp.Contracts\IoTSharp.Contracts.csproj" />
 		<ProjectReference Include="..\IoTSharp.Data.Storage\IoTSharp.Data.Cassandra\IoTSharp.Data.Cassandra.csproj" />
@@ -241,7 +244,6 @@
 		<ProjectReference Include="..\IoTSharp.Interpreter\IoTSharp.Interpreter.csproj" />
 		<ProjectReference Include="..\IoTSharp.TaskActions\IoTSharp.TaskActions.csproj" />
 	</ItemGroup>
-
 	<ItemGroup>
 		<Compile Update="Properties\Resources.Designer.cs">
 			<DesignTime>True</DesignTime>
@@ -256,6 +258,8 @@
 		</EmbeddedResource>
 	</ItemGroup>
 	<ProjectExtensions>
-		<VisualStudio><UserProperties /></VisualStudio>
+		<VisualStudio>
+			<UserProperties appsettings_1postgresql_1json__JsonSchema="https://appliedengdesign.github.io/cnccodes-json-schema/draft/2022-07/schema" />
+		</VisualStudio>
 	</ProjectExtensions>
 </Project>

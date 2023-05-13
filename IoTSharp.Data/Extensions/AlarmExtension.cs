@@ -16,14 +16,14 @@ namespace IoTSharp.Data.Extensions
             OriginatorType originatorType = cad.OriginatorType;
             if (cad.OriginatorType == OriginatorType.Device || cad.OriginatorType == OriginatorType.Gateway || cad.OriginatorType == OriginatorType.Unknow)
             {
-                var dev = _context.Device.Include(d=>d.Tenant).Include(d=>d.Customer).AsSplitQuery().FirstOrDefault(d => d.Id.ToString() == cad.OriginatorName || d.Name == cad.OriginatorName);
+                var dev = _context.Device.Include(d=>d.Tenant).Include(d=>d.Customer).FirstOrDefault(d => d.Id.ToString() == cad.OriginatorName || d.Name == cad.OriginatorName);
                 if (dev != null)
                 {
                     if (dev.DeviceType == DeviceType.Gateway)
                     {
                         if (dev.Id.ToString() != cad.OriginatorName && dev.Name != cad.OriginatorName)
                         {
-                            var subdev = from g in _context.Device.Include(d => d.Tenant).Include(d => d.Customer).Include(g => g.Owner).AsSplitQuery() where g.Owner == dev && g.Name == cad.OriginatorName select g;
+                            var subdev = from g in _context.Device.Include(d => d.Tenant).Include(d => d.Customer).Include(g => g.Owner) where g.Owner == dev && g.Name == cad.OriginatorName select g;
                             var orig = await subdev.FirstOrDefaultAsync();
                             OriginatorId = orig.Id;
                             originatorType = OriginatorType.Device;
@@ -51,7 +51,7 @@ namespace IoTSharp.Data.Extensions
             }
             else if (cad.OriginatorType == OriginatorType.Asset)
             {
-                var ass = _context.Assets.Include(a => a.Tenant).Include(a => a.Customer).AsSplitQuery().FirstOrDefault(d => d.Id.ToString() == cad.OriginatorName || d.Name == cad.OriginatorName);
+                var ass = _context.Assets.Include(a => a.Tenant).Include(a => a.Customer).FirstOrDefault(d => (d.Id.ToString() == cad.OriginatorName || d.Name == cad.OriginatorName) && d.Deleted==false);
                 if (ass != null)
                 {
                     originatorType = OriginatorType.Asset;
@@ -69,8 +69,6 @@ namespace IoTSharp.Data.Extensions
             else return new ApiResult<Alarm>(ApiCode.NotFoundDevice, "Originator name not a asset",null);
         }
 
-      
-
         public static async Task<ApiResult<Alarm>> OccurredAlarm(this ApplicationDbContext _context, CreateAlarmDto dto, Action<Alarm> action)
         {
             var result = new ApiResult<Alarm>(ApiCode.InValidData,"",null);
@@ -78,16 +76,15 @@ namespace IoTSharp.Data.Extensions
             {
                 var alarm = new Alarm
                 {
-                    Id = Guid.NewGuid(),
-                    AckDateTime = DateTime.Now,
+                    AckDateTime = DateTime.UtcNow,
                     AlarmDetail = dto.AlarmDetail,
                     AlarmStatus = AlarmStatus.Active_UnAck,
                     AlarmType = dto.AlarmType,
-                    ClearDateTime = new DateTime(1970, 1, 1),
-                    EndDateTime = new DateTime(1970, 1, 1),
+                    ClearDateTime = DateTime.UnixEpoch,
+                    EndDateTime = DateTime.UnixEpoch,
                     Propagate = true,
                     Serverity = dto.Serverity,
-                    StartDateTime = DateTime.Now,
+                    StartDateTime = DateTime.UtcNow,
                 };
                 action?.Invoke(alarm);
                 var isone = from a in _context.Alarms where a.OriginatorId == alarm.OriginatorId && a.AlarmType == alarm.AlarmType && (a.AlarmStatus == AlarmStatus.Cleared_UnAck|| a.AlarmStatus == AlarmStatus.Active_UnAck) select a;
@@ -99,15 +96,15 @@ namespace IoTSharp.Data.Extensions
                     {
                         if (old.Serverity== ServerityLevel.Indeterminate && dto.Serverity!= ServerityLevel.Indeterminate)
                         {
-                            old.StartDateTime = DateTime.Now;
+                            old.StartDateTime = DateTime.UtcNow;
                             alarm.Propagate = true;
                         }
                         else if (old.Serverity != ServerityLevel.Indeterminate && dto.Serverity == ServerityLevel.Indeterminate)
                         {
-                            old.EndDateTime = DateTime.Now;
+                            old.EndDateTime = DateTime.UtcNow;
                             if (old.ClearDateTime.Year == 1970)
                             {
-                                old.ClearDateTime = DateTime.Now;
+                                old.ClearDateTime = DateTime.UtcNow;
                             }
                             alarm.Propagate = true;
                         }
@@ -117,10 +114,11 @@ namespace IoTSharp.Data.Extensions
                         }
                         old.Serverity = dto.Serverity;
                     }
+                    alarm =old;
                 }
                 else
                 {
-
+                    alarm.Id = Guid.NewGuid();
                     _context.Alarms.Add(alarm);
                 }
                 int ret = await _context.SaveChangesAsync();

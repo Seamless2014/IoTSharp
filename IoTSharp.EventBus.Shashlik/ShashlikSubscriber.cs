@@ -35,7 +35,8 @@ namespace IoTSharp.EventBus.Shashlik
         }
         public async Task Execute(AttributeDataEvent @event, IDictionary<string, string> items)
         {
-            await _subscriber.StoreAttributeData((PlayloadData)@event);
+            var data = @event.Data;
+            if (data != null) await _subscriber.StoreAttributeData(data);
         }
     }
 
@@ -49,7 +50,8 @@ namespace IoTSharp.EventBus.Shashlik
         }
         public async Task Execute(TelemetryDataEvent @event, IDictionary<string, string> items)
         {
-            await _subscriber.StoreTelemetryData((PlayloadData)@event);
+            var data = @event.Data;
+            if (data != null) await _subscriber.StoreTelemetryData(data);
         }
     }
 
@@ -63,7 +65,8 @@ namespace IoTSharp.EventBus.Shashlik
         }
         public async Task Execute(AlarmEvent @event, IDictionary<string, string> items)
         {
-            await _subscriber.OccurredAlarm((CreateAlarmDto)@event);
+            var data = @event.Data;
+            if (data != null) await _subscriber.OccurredAlarm(data);
         }
     }
 
@@ -94,6 +97,36 @@ namespace IoTSharp.EventBus.Shashlik
         public async Task Execute(DeleteDeviceEvent @event, IDictionary<string, string> items)
         {
             await _subscriber.DeleteDevice(@event.DeviceId);
+        }
+    }
+    public class DeviceConnectEventHandler : IEventHandler<DeviceConnectEvent>
+    {
+        private readonly ISubscriber _subscriber;
+
+        public DeviceConnectEventHandler(ISubscriber subscriber)
+        {
+            _subscriber = subscriber;
+        }
+        public async Task Execute(DeviceConnectEvent @event, IDictionary<string, string> items)
+        {
+            var data = @event.Data;
+            if (data != null)
+                await _subscriber.Connect(data.DeviceId, data.ConnectStatus);
+        }
+    }
+    public class DeviceActivityEventHandler : IEventHandler<DeviceActivityEvent>
+    {
+        private readonly ISubscriber _subscriber;
+
+        public DeviceActivityEventHandler(ISubscriber subscriber)
+        {
+            _subscriber = subscriber;
+        }
+        public async Task Execute(DeviceActivityEvent @event, IDictionary<string, string> items)
+        {
+            var data = @event.Data;
+            if (data != null)
+                await _subscriber.Active(data.DeviceId, data.Activity);
         }
     }
 }

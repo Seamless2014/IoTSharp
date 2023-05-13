@@ -50,5 +50,6 @@ namespace IoTSharp.Data
         public DeviceIdentity DeviceIdentity { get; set; }
 
         public bool Deleted { get; set; }
+
     }
 }

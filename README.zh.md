@@ -1,11 +1,34 @@
-![IOTSharp LOGO](docs/static/img/350x100.png)  
+<p align="left">
+  <a href="https://iotsharp.io/">
+    <img src="docs/static/img/logo_white.svg" width="360px" alt="IoTSharp logo" />
+  </a>
+</p>
 
 [![Build status](https://ci.appveyor.com/api/projects/status/5o23f5vss89ct2lw/branch/master?svg=true)](https://ci.appveyor.com/project/MaiKeBing/iotsharp/branch/master)
 ![GitHub](https://img.shields.io/github/license/iotsharp/iotsharp.svg)
-![.NET Core](https://github.com/IoTSharp/IoTSharp/workflows/.NET%20Core/badge.svg?branch=master)
+[![.NET Core build](https://github.com/IoTSharp/IoTSharp/actions/workflows/dotnet-build.yml/badge.svg)](https://github.com/IoTSharp/IoTSharp/actions/workflows/dotnet-build.yml)
+[![pages-build-deployment](https://github.com/IoTSharp/IoTSharp/actions/workflows/pages/pages-build-deployment/badge.svg)](https://github.com/IoTSharp/IoTSharp/actions/workflows/pages/pages-build-deployment)
+[![Building and Packaging](https://github.com/IoTSharp/IoTSharp/actions/workflows/dotnet-publish.yml/badge.svg)](https://github.com/IoTSharp/IoTSharp/actions/workflows/dotnet-publish.yml)
+![Docker Cloud Build Status](https://img.shields.io/docker/cloud/build/maikebing/iotsharp?style=flat-square)
+![Docker Pulls](https://img.shields.io/docker/pulls/maikebing/iotsharp)
+![GitHub all releases](https://img.shields.io/github/downloads/iotsharp/iotsharp/total)
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2FIoTSharp%2FIoTSharp.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2FIoTSharp%2FIoTSharp?ref=badge_shield)
+[![star](https://gitee.com/IoTSharp/IoTSharp/badge/star.svg?theme=gvp)](https://gitee.com/IoTSharp/IoTSharp/stargazers)
+[![fork](https://gitee.com/IoTSharp/IoTSharp/badge/fork.svg?theme=gvp)](https://gitee.com/IoTSharp/IoTSharp/members)
 
-IoTSharp 是一个 基于.Net Core 开源的物联网基础平台， 支持 HTTP、MQTT 、CoAp 协议， 属性数据和遥测数据协议简单类型丰富，简单设置即可将数据存储在PostgreSql、MySql、Oracle、SQLServer、Sqlite，是一个用于数据收集、处理、可视化与设备管理的 IoT 平台.
+IoTSharp 是一个开源的物联网基础平台，集设备属性数据管理、遥测数据监测、RPC多模式远程控制、规则链设计引擎等强大能力，依据数字孪生概念将可见与不可见的物理设备统一孪生到数字世界，在落地上IoTSharp结合了资产管理、产品化发展的理念，让平台应用更加贴合复杂的应用场景，在协议支持上支持HTTP、MQTT 、CoAp 等多种标准物联网协议接入和非标协议的转换。  
 
+
+
+ * ## 愿项目用户:
+
+   * 愿您行善，不作恶。
+
+    * 愿您原谅自己，原谅别人。
+
+    * 愿您自由分享，永远不要拿走超过您给予的。
+
+       
 
 ## 支持的数据库:
 
@@ -46,9 +69,9 @@ IoTSharp 是一个 基于.Net Core 开源的物联网基础平台， 支持 HTTP
 * MySql,
 * SqlServer
 
-## IoTShar 演示
-    http://139.9.232.10:2927    
- 密码请加微信或者QQ群询问
+## IoTSharp 演示 
+
+ - [使用Vue3实现的IoTSharp前端](http://demo.iotsharp.net)
 
 ##  IoTSharp 云服务  
   https://cloud.iotsharp.net/
@@ -99,8 +122,8 @@ IoTSharp.Edge.nanoFramework 是一个 nanoFramework's mqtt 客户端， 它允�
 
 https://github.com/IoTSharp/iotsharp-rtthread-package
 
-|  
-IoTSharp 的软件生态
+
+## IoTSharp 的软件生态
 
 - MaiKeBing.CAP.ZeroMQ [![MaiKeBing.CAP.ZeroMQ](https://img.shields.io/nuget/v/MaiKeBing.CAP.ZeroMQ.svg)](https://www.nuget.org/packages/MaiKeBing.CAP.ZeroMQ/)
 - MaiKeBing.CAP.LiteDB  [![MaiKeBing.CAP.LiteDB](https://img.shields.io/nuget/v/MaiKeBing.CAP.LiteDB.svg)](https://www.nuget.org/packages/MaiKeBing.CAP.LiteDB/)
@@ -140,13 +163,18 @@ We will put the detailed donation records on the below!
 |                                                        | 姓名                                  | Stars | 捐赠 | 留言 |
 | ------------------------------------------------------------ | ------------------ | -------- | -------- | -------- |
 | [![@iioter](https://avatars.githubusercontent.com/u/29589505?s=80&v=4)](https://github.com/iioter) | whd | ![GitHub User's stars](https://img.shields.io/github/stars/iioter?affiliations=OWNER%2CCOLLABORATOR%2CORGANIZATION_MEMBER&style=for-the-badge) | ￥1024 =120+100+292+512(码云共计四次) |  |
-| [![@nnhy](https://avatars.githubusercontent.com/u/506367?s=80&v=4)](https://github.com/nnhy) | 大石头 | ![GitHub User's stars](https://img.shields.io/github/stars/nnhy?affiliations=OWNER%2CCOLLABORATOR%2CORGANIZATION_MEMBER&style=for-the-badge) |     ￥672=666+5（码云+公众号）     |            |
+| [![@nnhy](https://avatars.githubusercontent.com/u/506367?s=80&v=4)](https://github.com/nnhy) | 大石头 | ![GitHub User's stars](https://img.shields.io/github/stars/nnhy?affiliations=OWNER%2CCOLLABORATOR%2CORGANIZATION_MEMBER&style=for-the-badge) |     ￥672=666+5（码云+公众号）     |           |
 |  | 无敌飞行家 | ![GitHub User's stars](https://img.shields.io/github/stars/hehaoyu_2014?affiliations=OWNER%2CCOLLABORATOR%2CORGANIZATION_MEMBER&style=for-the-badge) | ￥5=5(公众号) |  |
-|  | 匿名公司 |  | ￥1000=1000(微信转账) |  |
 | [![@davidzhu001](https://avatars.githubusercontent.com/u/9436230?s=80&v=4)](https://github.com/davidzhu001)   | 农民也很疯狂 |  ![GitHub User's stars](https://img.shields.io/github/stars/davidzhu001?affiliations=OWNER%2CCOLLABORATOR%2CORGANIZATION_MEMBER&style=for-the-badge)| ￥400=200+200 微信转账 | |
 | [![@280780363](https://avatars.githubusercontent.com/u/20083278?s=80&v=4)](https://github.com/280780363)   | 谷草 |  ![GitHub User's stars](https://img.shields.io/github/stars/280780363?affiliations=OWNER%2CCOLLABORATOR%2CORGANIZATION_MEMBER&style=for-the-badge)| ￥88 微信转账 | |
-
-
+| [![@Jackson-918](https://avatars.githubusercontent.com/u/44353254?s=80&v=4)](https://github.com/Jackson-918)   | Jackson-918 |  ![GitHub User's stars](https://img.shields.io/github/stars/Jackson-918?affiliations=OWNER%2CCOLLABORATOR%2CORGANIZATION_MEMBER&style=for-the-badge)| ￥60 微信转账 | |
+| [![@OweQian](https://avatars.githubusercontent.com/u/25632596?s=80&v=4)](https://github.com/OweQian)   | OweQian |  ![GitHub User's stars](https://img.shields.io/github/stars/OweQian?affiliations=OWNER%2CCOLLABORATOR%2CORGANIZATION_MEMBER&style=for-the-badge)| ￥100 微信转账 | |
+| [![@uncle-stone](https://foruda.gitee.com/avatar/1670051844286871132/2372506_iotsharp_1670051843.png!avatar100)](https://gitee.com/uncle-stone)   | 石头叔叔 |  | ￥99 微信转账 | |
+|  | 匿名公司 |  | ￥1000=1000(微信转账) |  |
+|  | *阵 |  | ￥50(微信转账) |  |
+|  | *守 |  | ￥10(微信转账) | 加油iotsharp! |
+| [![@24008550](https://avatars.githubusercontent.com/u/122004038?s=80&v=4)](https://github.com/24008550) | 马超 | ![GitHub User's stars](https://img.shields.io/github/stars/24008550?affiliations=OWNER%2CCOLLABORATOR%2CORGANIZATION_MEMBER&style=for-the-badge) | ￥200（微信红包） |  |
+| [![@joyinan](https://foruda.gitee.com/avatar/1676895845500193295/12369_joyinan_1578914838.png!avatar200)](https://gitee.com/joyinan) | joyinan | ![Gitee User's stars](https://img.shields.io/gitee/stars/joyinan?affiliations=OWNER%2CCOLLABORATOR%2CORGANIZATION_MEMBER&style=for-the-badge) | ￥100（微信红包） |  |
 
 
 
@@ -154,8 +182,7 @@ We will put the detailed donation records on the below!
 
 If you encounter any problems in the process, feel free to ask for help via following channels. We also encourage experienced users to help newcomers.
 
-- [![Discord Server](https://img.shields.io/discord/895689311612178442?color=%237289DA&label=IoTSharp&logo=discord&logoColor=white&style=flat-square)](https://discord.gg/My6PaTmUvu)
-
+ 
 | 公众号 |    [QQ群63631741](https://jq.qq.com/?_wv=1027&k=HJ7h3gbO)  |  微信群  |
 | ------ | ---- | ---- |
 | ![](docs/static/img/qrcode.jpg) | ![](docs/static/img/IoTSharpQQGruop.png) | ![企业微信群](docs/static/img/qyqun.jpg) |
@@ -164,5 +191,11 @@ If you encounter any problems in the process, feel free to ask for help via foll
 
 ## dotNET China
 
-[![DotNetChina](https://images.gitee.com/uploads/images/2021/0309/134044_9c191d7b_974299.png)](https://gitee.com/dotnetchina/IoTSharp)
+[![DotNetChina](https://images.gitee.com/uploads/images/2021/0309/134044_9c191d7b_974299.png)](https://gitee.com/dotnetchina)
 
+## 优秀开源社区
+* [LinkWeChat](https://gitee.com/LinkWeChat/link-wechat) LinkWeChat 是基于企业微信的开源 SCRM 系统，是企业私域流量管理与营销的综合解决方案。
+* [IoTSharp](https://gitee.com/IoTSharp) IoTSharp 是一个 基于.Net Core 开源的物联网基础平台， 支持 HTTP、MQTT 、CoAp 协议
+* [流之云](https://gitee.com/ntdgg) 信息化、数字化服务提供商
+* [translate.js](https://gitee.com/mail_osc/translate) 网页自动翻译，页面无需另行改造，加入两行js即可让你的网页快速具备多国语言切换能力！
+* [IoTGateway](https://gitee.com/iioter/iotgateway) IoTGateway是一个基于.Net6.0 开源的物联网网关，通过可视化配置，轻松的连接到你的任何设备和物联网平台。
